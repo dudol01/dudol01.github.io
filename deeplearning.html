@@ -1,0 +1,323 @@
+import React, { useState, useEffect } from 'react';
+import { Brain, Trophy, Star, Zap, Target, Award } from 'lucide-react';
+
+export default function DeepLearningGame() {
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [stars, setStars] = useState(0);
+  const [gameState, setGameState] = useState('menu'); // menu, playing, result
+  const [selectedAnswers, setSelectedAnswers] = useState([]);
+  const [feedback, setFeedback] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  const levels = [
+    {
+      id: 1,
+      title: '뉴런 알아보기',
+      question: '우리 뇌 속 뉴런처럼 컴퓨터도 신호를 받아서 계산해요! 아래 중 뉴런이 하는 일은?',
+      options: [
+        { text: '신호를 받아서 판단하기', correct: true, explanation: '정답! 뉴런은 여러 신호를 받아서 중요한지 판단해요 🧠' },
+        { text: '음악만 듣기', correct: false, explanation: '아니에요. 뉴런은 신호를 처리하는 역할을 해요.' },
+        { text: '잠만 자기', correct: false, explanation: '아니에요. 뉴런은 항상 신호를 처리하고 있어요!' }
+      ],
+      image: '🧠',
+      color: 'from-pink-400 to-purple-500'
+    },
+    {
+      id: 2,
+      title: '입력과 출력',
+      question: 'AI가 고양이 사진을 보고 "고양이"라고 알아맞혀요. 이때 입력은?',
+      options: [
+        { text: '고양이 사진', correct: true, explanation: '정답! 사진이 입력이고, "고양이"라는 답이 출력이에요 📸' },
+        { text: '컴퓨터 화면', correct: false, explanation: '화면은 도구일 뿐, 입력은 AI가 분석하는 데이터예요.' },
+        { text: '"고양이"라는 단어', correct: false, explanation: '그건 출력(결과)이에요. 입력은 사진이에요!' }
+      ],
+      image: '📸',
+      color: 'from-blue-400 to-cyan-500'
+    },
+    {
+      id: 3,
+      title: '학습하기',
+      question: 'AI는 어떻게 똑똑해질까요?',
+      options: [
+        { text: '많은 예제를 보고 배워요', correct: true, explanation: '정답! 수천 개의 예제를 보면서 패턴을 배워요 📚' },
+        { text: '마법을 부려요', correct: false, explanation: '마법이 아니라 수학과 데이터로 배워요!' },
+        { text: '처음부터 모든 걸 알아요', correct: false, explanation: '아니에요! AI도 배워야 똑똑해져요.' }
+      ],
+      image: '📚',
+      color: 'from-green-400 to-emerald-500'
+    },
+    {
+      id: 4,
+      title: '층층이 쌓기',
+      question: '딥러닝의 "딥(Deep)"은 무슨 뜻일까요?',
+      options: [
+        { text: '여러 층이 깊게 쌓여있어요', correct: true, explanation: '정답! 케이크처럼 층층이 쌓여서 복잡한 걸 배워요 🎂' },
+        { text: '깊은 바다에 있어요', correct: false, explanation: '딥은 깊다는 뜻이지만, 여기선 층이 많다는 의미예요!' },
+        { text: '소리가 깊어요', correct: false, explanation: '신경망의 층이 깊다는 뜻이에요!' }
+      ],
+      image: '🎂',
+      color: 'from-yellow-400 to-orange-500'
+    },
+    {
+      id: 5,
+      title: '가중치 조절',
+      question: 'AI가 틀렸을 때 어떻게 할까요?',
+      options: [
+        { text: '조금씩 조절해서 고쳐요', correct: true, explanation: '정답! 실수를 고치면서 점점 정확해져요 🎯' },
+        { text: '그냥 포기해요', correct: false, explanation: '포기하지 않아요! 계속 배우면서 발전해요.' },
+        { text: '처음부터 다시 시작해요', correct: false, explanation: '전부 다시하지 않고 조금씩 수정해요!' }
+      ],
+      image: '🎯',
+      color: 'from-red-400 to-pink-500'
+    },
+    {
+      id: 6,
+      title: '패턴 찾기',
+      question: '사과 사진 100개를 보여줬어요. AI는 무엇을 배울까요?',
+      options: [
+        { text: '사과의 공통된 특징', correct: true, explanation: '정답! 빨간색, 둥근 모양 등 패턴을 배워요 🍎' },
+        { text: '사과 한 개만 기억해요', correct: false, explanation: '한 개가 아니라 공통점을 찾아요!' },
+        { text: '아무것도 배우지 못해요', correct: false, explanation: '여러 예제를 보면 패턴을 배울 수 있어요!' }
+      ],
+      image: '🍎',
+      color: 'from-purple-400 to-pink-500'
+    }
+  ];
+
+  useEffect(() => {
+    if (showCelebration) {
+      const timer = setTimeout(() => setShowCelebration(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration]);
+
+  const startGame = () => {
+    setGameState('playing');
+    setCurrentLevel(1);
+    setScore(0);
+    setSelectedAnswers([]);
+    setFeedback('');
+  };
+
+  const handleAnswer = (optionIndex) => {
+    const currentLevelData = levels[currentLevel - 1];
+    const selectedOption = currentLevelData.options[optionIndex];
+    
+    setFeedback(selectedOption.explanation);
+    
+    if (selectedOption.correct) {
+      const earnedPoints = 100;
+      setScore(score + earnedPoints);
+      setStars(stars + 1);
+      setShowCelebration(true);
+      
+      setTimeout(() => {
+        if (currentLevel < levels.length) {
+          setCurrentLevel(currentLevel + 1);
+          setFeedback('');
+        } else {
+          finishGame(score + earnedPoints);
+        }
+      }, 2500);
+    } else {
+      setTimeout(() => {
+        setFeedback('');
+      }, 2500);
+    }
+  };
+
+  const finishGame = (finalScore) => {
+    if (finalScore > highScore) {
+      setHighScore(finalScore);
+    }
+    setGameState('result');
+  };
+
+  const getRank = () => {
+    const percentage = (stars / levels.length) * 100;
+    if (percentage === 100) return { title: '딥러닝 천재', emoji: '🏆', color: 'text-yellow-400' };
+    if (percentage >= 80) return { title: '딥러닝 박사', emoji: '🎓', color: 'text-purple-400' };
+    if (percentage >= 60) return { title: '딥러닝 학생', emoji: '📚', color: 'text-blue-400' };
+    return { title: '딥러닝 새싹', emoji: '🌱', color: 'text-green-400' };
+  };
+
+  if (gameState === 'menu') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-yellow-400 p-8 flex items-center justify-center">
+        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 text-center animate-bounce-slow">
+          <div className="text-8xl mb-6 animate-pulse">🧠✨</div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+            뉴런 탐험대
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">딥러닝의 신비한 세계로 떠나요!</p>
+          
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="bg-gradient-to-br from-blue-100 to-blue-200 p-4 rounded-xl">
+              <Brain className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+              <p className="font-bold text-blue-800">뇌처럼 배워요</p>
+            </div>
+            <div className="bg-gradient-to-br from-green-100 to-green-200 p-4 rounded-xl">
+              <Target className="w-8 h-8 mx-auto mb-2 text-green-600" />
+              <p className="font-bold text-green-800">6개 레벨</p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-100 to-yellow-200 p-4 rounded-xl">
+              <Star className="w-8 h-8 mx-auto mb-2 text-yellow-600" />
+              <p className="font-bold text-yellow-800">별 모으기</p>
+            </div>
+          </div>
+
+          {highScore > 0 && (
+            <div className="mb-6 bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-xl">
+              <Trophy className="w-6 h-6 inline mr-2 text-orange-500" />
+              <span className="text-lg font-bold text-orange-800">최고 점수: {highScore}점</span>
+            </div>
+          )}
+
+          <button
+            onClick={startGame}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl font-bold py-4 px-12 rounded-full hover:scale-110 transform transition shadow-lg hover:shadow-xl"
+          >
+            🚀 탐험 시작!
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'playing') {
+    const currentLevelData = levels[currentLevel - 1];
+    
+    return (
+      <div className={`min-h-screen bg-gradient-to-br ${currentLevelData.color} p-4 md:p-8`}>
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold">
+                레벨 {currentLevel}/{levels.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                <span className="font-bold text-lg">{stars}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-400 px-4 py-2 rounded-full">
+              <Zap className="w-5 h-5 text-white" />
+              <span className="font-bold text-white text-lg">{score}점</span>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="bg-white rounded-full h-4 mb-6 overflow-hidden shadow-inner">
+            <div 
+              className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-500"
+              style={{ width: `${(currentLevel / levels.length) * 100}%` }}
+            />
+          </div>
+
+          {/* Question Card */}
+          <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
+            <div className="text-center mb-6">
+              <div className="text-7xl mb-4 animate-bounce">{currentLevelData.image}</div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">{currentLevelData.title}</h2>
+              <p className="text-xl text-gray-600">{currentLevelData.question}</p>
+            </div>
+
+            <div className="space-y-4">
+              {currentLevelData.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(index)}
+                  disabled={feedback !== ''}
+                  className="w-full bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-2 border-purple-200 rounded-2xl p-6 text-left text-lg font-semibold text-gray-800 hover:scale-105 transform transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
+                >
+                  <span className="inline-block w-8 h-8 bg-purple-500 text-white rounded-full text-center mr-3">
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  {option.text}
+                </button>
+              ))}
+            </div>
+
+            {feedback && (
+              <div className={`mt-6 p-6 rounded-2xl ${feedback.includes('정답') ? 'bg-green-100 border-2 border-green-400' : 'bg-orange-100 border-2 border-orange-400'}`}>
+                <p className="text-lg font-bold text-gray-800">{feedback}</p>
+              </div>
+            )}
+          </div>
+
+          {showCelebration && (
+            <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
+              <div className="text-9xl animate-bounce">🎉</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'result') {
+    const rank = getRank();
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 p-8 flex items-center justify-center">
+        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
+          <div className="text-8xl mb-6 animate-bounce">{rank.emoji}</div>
+          <h1 className={`text-5xl font-bold mb-4 ${rank.color}`}>{rank.title}</h1>
+          
+          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 mb-6">
+            <div className="text-6xl font-bold text-purple-600 mb-2">{score}점</div>
+            <div className="flex justify-center items-center gap-2 text-2xl">
+              <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
+              <span className="font-bold">{stars} / {levels.length} 별</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-xl">
+              <Award className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+              <p className="font-bold text-blue-800">정답률</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {Math.round((stars / levels.length) * 100)}%
+              </p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-xl">
+              <Trophy className="w-8 h-8 mx-auto mb-2 text-green-600" />
+              <p className="font-bold text-green-800">최고 기록</p>
+              <p className="text-2xl font-bold text-green-600">{Math.max(score, highScore)}점</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-6 rounded-2xl mb-6 text-left">
+            <h3 className="font-bold text-lg mb-3 text-gray-800">🎓 오늘 배운 내용</h3>
+            <ul className="space-y-2 text-gray-700">
+              <li>✨ 뉴런이 신호를 처리하는 방법</li>
+              <li>✨ 입력과 출력의 개념</li>
+              <li>✨ AI가 학습하는 방법</li>
+              <li>✨ 딥러닝의 층 구조</li>
+              <li>✨ 가중치를 조절하며 발전하기</li>
+              <li>✨ 패턴을 찾아 배우기</li>
+            </ul>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={startGame}
+              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xl font-bold py-4 px-8 rounded-full hover:scale-105 transform transition shadow-lg"
+            >
+              🔄 다시 도전!
+            </button>
+            <button
+              onClick={() => setGameState('menu')}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xl font-bold py-4 px-8 rounded-full hover:scale-105 transform transition shadow-lg"
+            >
+              🏠 메인으로
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
