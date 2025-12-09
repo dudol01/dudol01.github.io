@@ -1,323 +1,406 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, Trophy, Star, Zap, Target, Award } from 'lucide-react';
-
-export default function DeepLearningGame() {
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const [stars, setStars] = useState(0);
-  const [gameState, setGameState] = useState('menu'); // menu, playing, result
-  const [selectedAnswers, setSelectedAnswers] = useState([]);
-  const [feedback, setFeedback] = useState('');
-  const [showCelebration, setShowCelebration] = useState(false);
-
-  const levels = [
-    {
-      id: 1,
-      title: '뉴런 알아보기',
-      question: '우리 뇌 속 뉴런처럼 컴퓨터도 신호를 받아서 계산해요! 아래 중 뉴런이 하는 일은?',
-      options: [
-        { text: '신호를 받아서 판단하기', correct: true, explanation: '정답! 뉴런은 여러 신호를 받아서 중요한지 판단해요 🧠' },
-        { text: '음악만 듣기', correct: false, explanation: '아니에요. 뉴런은 신호를 처리하는 역할을 해요.' },
-        { text: '잠만 자기', correct: false, explanation: '아니에요. 뉴런은 항상 신호를 처리하고 있어요!' }
-      ],
-      image: '🧠',
-      color: 'from-pink-400 to-purple-500'
-    },
-    {
-      id: 2,
-      title: '입력과 출력',
-      question: 'AI가 고양이 사진을 보고 "고양이"라고 알아맞혀요. 이때 입력은?',
-      options: [
-        { text: '고양이 사진', correct: true, explanation: '정답! 사진이 입력이고, "고양이"라는 답이 출력이에요 📸' },
-        { text: '컴퓨터 화면', correct: false, explanation: '화면은 도구일 뿐, 입력은 AI가 분석하는 데이터예요.' },
-        { text: '"고양이"라는 단어', correct: false, explanation: '그건 출력(결과)이에요. 입력은 사진이에요!' }
-      ],
-      image: '📸',
-      color: 'from-blue-400 to-cyan-500'
-    },
-    {
-      id: 3,
-      title: '학습하기',
-      question: 'AI는 어떻게 똑똑해질까요?',
-      options: [
-        { text: '많은 예제를 보고 배워요', correct: true, explanation: '정답! 수천 개의 예제를 보면서 패턴을 배워요 📚' },
-        { text: '마법을 부려요', correct: false, explanation: '마법이 아니라 수학과 데이터로 배워요!' },
-        { text: '처음부터 모든 걸 알아요', correct: false, explanation: '아니에요! AI도 배워야 똑똑해져요.' }
-      ],
-      image: '📚',
-      color: 'from-green-400 to-emerald-500'
-    },
-    {
-      id: 4,
-      title: '층층이 쌓기',
-      question: '딥러닝의 "딥(Deep)"은 무슨 뜻일까요?',
-      options: [
-        { text: '여러 층이 깊게 쌓여있어요', correct: true, explanation: '정답! 케이크처럼 층층이 쌓여서 복잡한 걸 배워요 🎂' },
-        { text: '깊은 바다에 있어요', correct: false, explanation: '딥은 깊다는 뜻이지만, 여기선 층이 많다는 의미예요!' },
-        { text: '소리가 깊어요', correct: false, explanation: '신경망의 층이 깊다는 뜻이에요!' }
-      ],
-      image: '🎂',
-      color: 'from-yellow-400 to-orange-500'
-    },
-    {
-      id: 5,
-      title: '가중치 조절',
-      question: 'AI가 틀렸을 때 어떻게 할까요?',
-      options: [
-        { text: '조금씩 조절해서 고쳐요', correct: true, explanation: '정답! 실수를 고치면서 점점 정확해져요 🎯' },
-        { text: '그냥 포기해요', correct: false, explanation: '포기하지 않아요! 계속 배우면서 발전해요.' },
-        { text: '처음부터 다시 시작해요', correct: false, explanation: '전부 다시하지 않고 조금씩 수정해요!' }
-      ],
-      image: '🎯',
-      color: 'from-red-400 to-pink-500'
-    },
-    {
-      id: 6,
-      title: '패턴 찾기',
-      question: '사과 사진 100개를 보여줬어요. AI는 무엇을 배울까요?',
-      options: [
-        { text: '사과의 공통된 특징', correct: true, explanation: '정답! 빨간색, 둥근 모양 등 패턴을 배워요 🍎' },
-        { text: '사과 한 개만 기억해요', correct: false, explanation: '한 개가 아니라 공통점을 찾아요!' },
-        { text: '아무것도 배우지 못해요', correct: false, explanation: '여러 예제를 보면 패턴을 배울 수 있어요!' }
-      ],
-      image: '🍎',
-      color: 'from-purple-400 to-pink-500'
-    }
-  ];
-
-  useEffect(() => {
-    if (showCelebration) {
-      const timer = setTimeout(() => setShowCelebration(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showCelebration]);
-
-  const startGame = () => {
-    setGameState('playing');
-    setCurrentLevel(1);
-    setScore(0);
-    setSelectedAnswers([]);
-    setFeedback('');
-  };
-
-  const handleAnswer = (optionIndex) => {
-    const currentLevelData = levels[currentLevel - 1];
-    const selectedOption = currentLevelData.options[optionIndex];
-    
-    setFeedback(selectedOption.explanation);
-    
-    if (selectedOption.correct) {
-      const earnedPoints = 100;
-      setScore(score + earnedPoints);
-      setStars(stars + 1);
-      setShowCelebration(true);
-      
-      setTimeout(() => {
-        if (currentLevel < levels.length) {
-          setCurrentLevel(currentLevel + 1);
-          setFeedback('');
-        } else {
-          finishGame(score + earnedPoints);
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로봇의 과일 분류 대작전 (통합본)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS 스타일 시작 --- */
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #E0F7FA;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
         }
-      }, 2500);
-    } else {
-      setTimeout(() => {
-        setFeedback('');
-      }, 2500);
-    }
-  };
 
-  const finishGame = (finalScore) => {
-    if (finalScore > highScore) {
-      setHighScore(finalScore);
-    }
-    setGameState('result');
-  };
+        .game-container {
+            background-color: #FFFFFF;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            padding: 25px;
+            text-align: center;
+        }
 
-  const getRank = () => {
-    const percentage = (stars / levels.length) * 100;
-    if (percentage === 100) return { title: '딥러닝 천재', emoji: '🏆', color: 'text-yellow-400' };
-    if (percentage >= 80) return { title: '딥러닝 박사', emoji: '🎓', color: 'text-purple-400' };
-    if (percentage >= 60) return { title: '딥러닝 학생', emoji: '📚', color: 'text-blue-400' };
-    return { title: '딥러닝 새싹', emoji: '🌱', color: 'text-green-400' };
-  };
+        h1 { color: #FF6F61; margin: 0 0 15px 0; }
 
-  if (gameState === 'menu') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-yellow-400 p-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 text-center animate-bounce-slow">
-          <div className="text-8xl mb-6 animate-pulse">🧠✨</div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-            뉴런 탐험대
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">딥러닝의 신비한 세계로 떠나요!</p>
-          
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-blue-100 to-blue-200 p-4 rounded-xl">
-              <Brain className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-              <p className="font-bold text-blue-800">뇌처럼 배워요</p>
+        .scoreboard {
+            background-color: #FFF9C4;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            color: #F57F17;
+            font-weight: bold;
+        }
+
+        /* 로봇 영역 */
+        .robot-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #E1F5FE;
+            border-radius: 15px;
+        }
+
+        #robot-face { width: 100px; height: 100px; object-fit: contain; }
+
+        .speech-bubble {
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 15px;
+            border: 2px solid #4FC3F7;
+            position: relative;
+            font-size: 1.1rem;
+        }
+
+        /* 과일 스타일 */
+        .fruit { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #555; transition: all 0.3s; }
+        .fruit.apple { background-color: #FF5252; box-shadow: 0 0 10px #FF5252; }
+        .fruit.banana { 
+            background-color: #FFD740; 
+            width: 90px; height: 45px; 
+            border-radius: 10px; 
+            transform: rotate(-10deg);
+        }
+        .fruit.orange { background-color: #FF9800; border-radius: 50%; }
+
+        /* 생각 파이프 */
+        .brain-pipes {
+            background-color: #FBE9E7;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 3px dashed #FFAB91;
+        }
+
+        .pipe-system {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            align-items: flex-end;
+            height: 120px;
+        }
+
+        .pipe-line-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 45%;
+        }
+
+        input[type=range] { width: 80%; cursor: pointer; margin-bottom: 10px; z-index: 10;}
+
+        /* 시각적 파이프 */
+        .visual-pipe {
+            width: 10px; height: 0px;
+            transition: all 0.2s ease-out;
+            border-radius: 5px;
+            min-height: 5px;
+        }
+
+        .red-pipe-visual { background-color: #FF5252; box-shadow: 0 0 5px #FF5252; }
+        .yellow-pipe-visual { background-color: #FFD740; box-shadow: 0 0 5px #FFD740; }
+
+        #btn-check {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Jua', sans-serif;
+            box-shadow: 0 4px 0 #388E3C;
+            transition: transform 0.1s;
+        }
+        #btn-check:active { transform: translateY(4px); box-shadow: none; }
+        #btn-check:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
+
+        /* 바구니 영역 */
+        .output-baskets { display: flex; gap: 10px; }
+        .basket {
+            flex: 1;
+            padding: 15px 5px;
+            background-color: #f5f5f5;
+            border: 3px solid #cfcfcf;
+            border-radius: 10px;
+            transition: all 0.3s;
+            opacity: 0.7;
+        }
+        .basket-icon { font-size: 2rem; margin-bottom: 5px; }
+        .basket.active { 
+            opacity: 1; border-color: #2196F3; background-color: #E3F2FD; 
+            transform: scale(1.1); box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        }
+        .basket.locked { background-color: #e0e0e0; color: #999; border-style: dashed;}
+
+        /* 모달 */
+        .hidden { display: none !important; }
+        #feedback-modal {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white; padding: 30px;
+            width: 80%; max-width: 400px;
+            border-radius: 20px; border: 5px solid #4CAF50;
+            box-shadow: 0 0 100px rgba(0,0,0,0.5);
+            z-index: 100;
+            animation: popIn 0.3s;
+        }
+        #feedback-modal.wrong { border-color: #FF5252; }
+        @keyframes popIn { from { transform: translate(-50%, -60%) scale(0.8); opacity: 0;} to { transform: translate(-50%, -50%) scale(1); opacity: 1;} }
+
+        #btn-next {
+            padding: 10px 25px; font-size: 1.1rem;
+            background: #2196F3; color: white; border:none; border-radius: 5px; cursor: pointer; font-family: 'Jua';
+        }
+        /* --- CSS 스타일 끝 --- */
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>🍓 로봇의 과일 분류 대작전! 🍌</h1>
+            <div class="scoreboard">
+                <span>점수: <span id="score">0</span></span> | 
+                <span>최고 기록: <span id="high-score">0</span></span>
             </div>
-            <div className="bg-gradient-to-br from-green-100 to-green-200 p-4 rounded-xl">
-              <Target className="w-8 h-8 mx-auto mb-2 text-green-600" />
-              <p className="font-bold text-green-800">6개 레벨</p>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-100 to-yellow-200 p-4 rounded-xl">
-              <Star className="w-8 h-8 mx-auto mb-2 text-yellow-600" />
-              <p className="font-bold text-yellow-800">별 모으기</p>
-            </div>
-          </div>
+        </header>
 
-          {highScore > 0 && (
-            <div className="mb-6 bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-xl">
-              <Trophy className="w-6 h-6 inline mr-2 text-orange-500" />
-              <span className="text-lg font-bold text-orange-800">최고 점수: {highScore}점</span>
-            </div>
-          )}
+        <main>
+            <section class="robot-area">
+                <div class="robot-wrapper">
+                    <img id="robot-face" src="assets/images/robot_normal.png" alt="🤖" onerror="this.style.display='none'; document.getElementById('emoji-fallback').style.display='block';">
+                    <div id="emoji-fallback" style="display:none; font-size:80px;">🤖</div>
+                </div>
+                
+                <div class="conveyor-belt">
+                    <div id="current-fruit" class="fruit"></div>
+                    <div class="speech-bubble" id="robot-speech">이 과일은 뭐지?</div>
+                </div>
+            </section>
 
-          <button
-            onClick={startGame}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl font-bold py-4 px-12 rounded-full hover:scale-110 transform transition shadow-lg hover:shadow-xl"
-          >
-            🚀 탐험 시작!
-          </button>
+            <section class="brain-pipes">
+                <h2>🧠 로봇의 뇌 (가중치 조절)</h2>
+                <p>파이프가 굵을수록 로봇은 그 색깔을 중요하게 생각해요!</p>
+                
+                <div class="pipe-system">
+                    <div class="pipe-line-wrapper">
+                        <label>빨강 중요도 🔴</label>
+                        <input type="range" id="weight-red" min="0" max="100" value="50">
+                        <div class="visual-pipe red-pipe-visual" id="visual-red"></div>
+                    </div>
+                    <div class="pipe-line-wrapper">
+                        <label>노랑 중요도 🟡</label>
+                        <input type="range" id="weight-yellow" min="0" max="100" value="50">
+                        <div class="visual-pipe yellow-pipe-visual" id="visual-yellow"></div>
+                    </div>
+                </div>
+
+                <button id="btn-check">결과 확인하기!</button>
+            </section>
+
+            <section class="output-baskets">
+                <div class="basket" id="basket-apple"><div class="basket-icon">🍎</div><div>사과</div></div>
+                <div class="basket" id="basket-banana"><div class="basket-icon">🍌</div><div>바나나</div></div>
+                <div class="basket locked" id="basket-orange"><div class="basket-icon">🔒</div><div>오렌지(200점)</div></div>
+            </section>
+        </main>
+        
+        <div id="feedback-modal" class="hidden">
+            <h2 id="feedback-title">정답입니다!</h2>
+            <p id="feedback-message">메시지 내용</p>
+            <button id="btn-next">다음 문제</button>
         </div>
-      </div>
-    );
-  }
+    </div>
 
-  if (gameState === 'playing') {
-    const currentLevelData = levels[currentLevel - 1];
-    
-    return (
-      <div className={`min-h-screen bg-gradient-to-br ${currentLevelData.color} p-4 md:p-8`}>
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold">
-                레벨 {currentLevel}/{levels.length}
-              </div>
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <span className="font-bold text-lg">{stars}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-400 px-4 py-2 rounded-full">
-              <Zap className="w-5 h-5 text-white" />
-              <span className="font-bold text-white text-lg">{score}점</span>
-            </div>
-          </div>
+    <audio id="sound-correct" src="assets/sounds/correct.mp3"></audio>
+    <audio id="sound-wrong" src="assets/sounds/wrong.mp3"></audio>
+    <audio id="sound-unlock" src="assets/sounds/unlock.mp3"></audio>
 
-          {/* Progress Bar */}
-          <div className="bg-white rounded-full h-4 mb-6 overflow-hidden shadow-inner">
-            <div 
-              className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-500"
-              style={{ width: `${(currentLevel / levels.length) * 100}%` }}
-            />
-          </div>
+    <script>
+        /* --- JS 스크립트 시작 --- */
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let currentFruitType = ''; 
+        let difficultyLevel = 1; 
+        const UNLOCK_SCORE = 200; 
 
-          {/* Question Card */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 mb-6">
-            <div className="text-center mb-6">
-              <div className="text-7xl mb-4 animate-bounce">{currentLevelData.image}</div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">{currentLevelData.title}</h2>
-              <p className="text-xl text-gray-600">{currentLevelData.question}</p>
-            </div>
+        const scoreEl = document.getElementById('score');
+        const highScoreEl = document.getElementById('high-score');
+        const currentFruitEl = document.getElementById('current-fruit');
+        const robotSpeech = document.getElementById('robot-speech');
+        const btnCheck = document.getElementById('btn-check');
+        const weightRed = document.getElementById('weight-red');
+        const weightYellow = document.getElementById('weight-yellow');
+        const visualRed = document.getElementById('visual-red');
+        const visualYellow = document.getElementById('visual-yellow');
 
-            <div className="space-y-4">
-              {currentLevelData.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(index)}
-                  disabled={feedback !== ''}
-                  className="w-full bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-2 border-purple-200 rounded-2xl p-6 text-left text-lg font-semibold text-gray-800 hover:scale-105 transform transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
-                >
-                  <span className="inline-block w-8 h-8 bg-purple-500 text-white rounded-full text-center mr-3">
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  {option.text}
-                </button>
-              ))}
-            </div>
+        // 오디오 요소
+        const soundCorrect = document.getElementById('sound-correct');
+        const soundWrong = document.getElementById('sound-wrong');
+        const soundUnlock = document.getElementById('sound-unlock');
 
-            {feedback && (
-              <div className={`mt-6 p-6 rounded-2xl ${feedback.includes('정답') ? 'bg-green-100 border-2 border-green-400' : 'bg-orange-100 border-2 border-orange-400'}`}>
-                <p className="text-lg font-bold text-gray-800">{feedback}</p>
-              </div>
-            )}
-          </div>
+        highScoreEl.textContent = highScore;
+        updatePipeVisuals();
+        nextRound();
 
-          {showCelebration && (
-            <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
-              <div className="text-9xl animate-bounce">🎉</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+        weightRed.addEventListener('input', updatePipeVisuals);
+        weightYellow.addEventListener('input', updatePipeVisuals);
+        btnCheck.addEventListener('click', predict);
+        document.getElementById('btn-next').addEventListener('click', nextRound);
 
-  if (gameState === 'result') {
-    const rank = getRank();
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400 p-8 flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 text-center">
-          <div className="text-8xl mb-6 animate-bounce">{rank.emoji}</div>
-          <h1 className={`text-5xl font-bold mb-4 ${rank.color}`}>{rank.title}</h1>
-          
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 mb-6">
-            <div className="text-6xl font-bold text-purple-600 mb-2">{score}점</div>
-            <div className="flex justify-center items-center gap-2 text-2xl">
-              <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
-              <span className="font-bold">{stars} / {levels.length} 별</span>
-            </div>
-          </div>
+        function updatePipeVisuals() {
+            const rVal = weightRed.value;
+            const yVal = weightYellow.value;
+            visualRed.style.height = (rVal / 2) + 'px'; 
+            visualYellow.style.height = (yVal / 2) + 'px';
+            visualRed.style.width = (10 + rVal * 0.4) + 'px';
+            visualYellow.style.width = (10 + yVal * 0.4) + 'px';
+            robotSpeech.textContent = "흐음... 어디 보자...";
+        }
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-xl">
-              <Award className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-              <p className="font-bold text-blue-800">정답률</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {Math.round((stars / levels.length) * 100)}%
-              </p>
-            </div>
-            <div className="bg-green-50 p-4 rounded-xl">
-              <Trophy className="w-8 h-8 mx-auto mb-2 text-green-600" />
-              <p className="font-bold text-green-800">최고 기록</p>
-              <p className="text-2xl font-bold text-green-600">{Math.max(score, highScore)}점</p>
-            </div>
-          </div>
+        function nextRound() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            resetBaskets();
+            setRobotEmotion('normal');
+            btnCheck.disabled = false;
 
-          <div className="bg-gray-50 p-6 rounded-2xl mb-6 text-left">
-            <h3 className="font-bold text-lg mb-3 text-gray-800">🎓 오늘 배운 내용</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>✨ 뉴런이 신호를 처리하는 방법</li>
-              <li>✨ 입력과 출력의 개념</li>
-              <li>✨ AI가 학습하는 방법</li>
-              <li>✨ 딥러닝의 층 구조</li>
-              <li>✨ 가중치를 조절하며 발전하기</li>
-              <li>✨ 패턴을 찾아 배우기</li>
-            </ul>
-          </div>
+            if (score >= UNLOCK_SCORE && difficultyLevel === 1) {
+                difficultyLevel = 2;
+                unlockOrange();
+                return;
+            }
 
-          <div className="flex gap-4">
-            <button
-              onClick={startGame}
-              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xl font-bold py-4 px-8 rounded-full hover:scale-105 transform transition shadow-lg"
-            >
-              🔄 다시 도전!
-            </button>
-            <button
-              onClick={() => setGameState('menu')}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xl font-bold py-4 px-8 rounded-full hover:scale-105 transform transition shadow-lg"
-            >
-              🏠 메인으로
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-}
+            let fruits = ['apple', 'banana'];
+            if (difficultyLevel === 2) fruits.push('orange');
+
+            currentFruitType = fruits[Math.floor(Math.random() * fruits.length)];
+            currentFruitEl.className = 'fruit ' + currentFruitType;
+            robotSpeech.textContent = "이 과일은 뭐지? 가르쳐줘!";
+        }
+
+        function unlockOrange() {
+            alert("🎉 축하합니다! 점수가 올라 새로운 과일 [오렌지]가 등장합니다!");
+            playSound(soundUnlock);
+            document.getElementById('basket-orange').classList.remove('locked');
+            document.getElementById('basket-orange').innerHTML = '<div class="basket-icon">🍊</div><div>오렌지</div>';
+            nextRound();
+        }
+
+        function predict() {
+            const rWeight = parseInt(weightRed.value);
+            const yWeight = parseInt(weightYellow.value);
+
+            const features = {
+                'apple': { r: 90, y: 10 },
+                'banana': { r: 10, y: 90 },
+                'orange': { r: 60, y: 60 }
+            };
+            const currentFeat = features[currentFruitType];
+
+            let scoreApple = (currentFeat.r * rWeight) + (currentFeat.y * (100 - yWeight));
+            let scoreBanana = (currentFeat.r * (100 - rWeight)) + (currentFeat.y * yWeight);
+            
+            let orangeBonus = 0;
+            if (rWeight > 40 && yWeight > 40) orangeBonus = 3000; 
+            let scoreOrange = (currentFeat.r * rWeight * 0.5) + (currentFeat.y * yWeight * 0.5) + orangeBonus;
+
+            if (difficultyLevel === 1) scoreOrange = -1;
+
+            let prediction = '';
+            if (scoreApple >= scoreBanana && scoreApple >= scoreOrange) prediction = 'apple';
+            else if (scoreBanana >= scoreApple && scoreBanana >= scoreOrange) prediction = 'banana';
+            else prediction = 'orange';
+
+            resetBaskets();
+            document.getElementById('basket-' + prediction).classList.add('active');
+            checkAnswer(prediction);
+        }
+
+        function checkAnswer(prediction) {
+            btnCheck.disabled = true;
+            const modal = document.getElementById('feedback-modal');
+            const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-message');
+
+            modal.classList.remove('hidden', 'wrong');
+
+            if (prediction === currentFruitType) {
+                score += (currentFruitType === 'orange' ? 20 : 10);
+                updateScore();
+                setRobotEmotion('happy');
+                playSound(soundCorrect);
+                title.textContent = "정답입니다! ⭕";
+                title.style.color = "#4CAF50";
+                msg.textContent = "로봇이 제대로 배웠네요! 참 잘했어요.";
+            } else {
+                score = Math.max(0, score - 5);
+                updateScore();
+                setRobotEmotion('sad');
+                playSound(soundWrong);
+                modal.classList.add('wrong');
+                title.textContent = "틀렸어요! ❌";
+                title.style.color = "#FF5252";
+                msg.innerHTML = `이건 <b>${getFruitName(currentFruitType)}</b>였어요.<br>파이프 두께를 조절해서 힌트를 다시 줘볼까요?`;
+            }
+        }
+
+        function updateScore() {
+            scoreEl.textContent = score;
+            if (score > highScore) {
+                highScore = score;
+                highScoreEl.textContent = highScore;
+                localStorage.setItem('highScore', highScore);
+            }
+        }
+
+        function resetBaskets() {
+            document.querySelectorAll('.basket').forEach(b => b.classList.remove('active'));
+        }
+
+        function setRobotEmotion(emotion) {
+            let fileName = 'robot_normal.png';
+            if (emotion === 'happy') fileName = 'robot_happy.png';
+            if (emotion === 'sad') fileName = 'robot_sad.png';
+            const img = document.getElementById('robot-face');
+            img.src = `assets/images/${fileName}`;
+            
+            // 이미지가 없을 때를 대비한 처리
+            const fallback = document.getElementById('emoji-fallback');
+            if(img.style.display === 'none' || img.width === 0) {
+                 img.style.display = 'none';
+                 fallback.style.display = 'block';
+                 if(emotion === 'happy') fallback.textContent = '🥰';
+                 else if(emotion === 'sad') fallback.textContent = '😭';
+                 else fallback.textContent = '🤖';
+            } else {
+                 img.style.display = 'block';
+                 fallback.style.display = 'none';
+            }
+        }
+
+        function playSound(audioEl) {
+            if (audioEl) {
+                audioEl.currentTime = 0;
+                audioEl.play().catch(e => {}); // 에러 무시
+            }
+        }
+
+        function getFruitName(type) {
+            if (type === 'apple') return '사과';
+            if (type === 'banana') return '바나나';
+            if (type === 'orange') return '오렌지';
+        }
+        /* --- JS 스크립트 끝 --- */
+    </script>
+</body>
+</html>
