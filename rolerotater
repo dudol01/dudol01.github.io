@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Fair Role - iOS Style</title>
+    <style>
+        /* --- iOS Design System (Previous Style Preserved) --- */
+        :root {
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-orange: #FF9500;
+            --ios-green: #34C759;
+            --ios-text: #1C1C1E;
+            --ios-gray: #8E8E93;
+            --ios-border: #E5E5EA;
+            --shadow: 0 2px 10px rgba(0,0,0,0.05);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background-color: var(--ios-bg);
+            margin: 0; padding: 0;
+            display: flex; height: 100vh;
+            color: var(--ios-text);
+            overflow: hidden;
+        }
+
+        /* --- 사이드바 (설정) --- */
+        #sidebar {
+            width: 380px;
+            background: var(--ios-bg);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            z-index: 20; padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .ios-header { padding: 0 20px 10px 20px; }
+        .ios-header h1 { font-size: 24px; font-weight: 800; margin: 0; }
+        .ios-header p { font-size: 13px; color: var(--ios-gray); margin: 4px 0 0 0; }
+
+        .list-group {
+            background: var(--ios-card);
+            border-radius: 12px;
+            margin: 0 16px 20px 16px;
+            padding: 5px 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid var(--ios-border); font-size: 15px;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-label { font-weight: 600; color: #333; }
+
+        /* 입력 필드 스타일 */
+        select, input[type="text"], input[type="number"] {
+            border: none; background: transparent;
+            font-size: 15px; text-align: right; outline: none;
+            font-weight: 500; color: var(--ios-blue);
+        }
+        
+        /* 역할 관리 리스트 */
+        .role-row {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        }
+        .role-input {
+            flex: 1; border: 1px solid var(--ios-border); padding: 8px; border-radius: 8px;
+            font-size: 14px; background: #fafafa; text-align: left !important; color: #333 !important;
+        }
+        .count-input {
+            width: 40px; text-align: center !important; border: 1px solid var(--ios-border);
+            padding: 8px; border-radius: 8px; background: #fafafa;
+        }
+        
+        /* 난이도 배지 버튼 */
+        .diff-btn {
+            padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; user-select: none;
+        }
+        .diff-high { background: #ffebeb; color: var(--ios-red); }
+        .diff-mid  { background: #fff8e1; color: var(--ios-orange); }
+        .diff-low  { background: #e8f5e9; color: var(--ios-green); }
+
+        /* 삭제 버튼 */
+        .del-btn {
+            color: var(--ios-gray); cursor: pointer; padding: 5px;
+        }
+        .del-btn:hover { color: var(--ios-red); }
+
+        /* 추가 버튼 */
+        .add-btn {
+            width: 100%; padding: 10px; text-align: center; color: var(--ios-blue); font-weight: 600; cursor: pointer;
+            border-top: 1px solid var(--ios-border); margin-top: 5px;
+        }
+
+        /* 학생 리스트 */
+        .student-row {
+            display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--ios-border);
+        }
+        .student-num { width: 24px; font-size: 12px; font-weight: bold; color: var(--ios-gray); }
+        .student-name { flex: 1; font-weight: 600; }
+        
+        .constraint-btn {
+            font-size: 12px; padding: 4px 8px; border-radius: 12px; cursor: pointer; background: #f2f2f7; color: #ccc;
+        }
+        .constraint-btn.active { background: #ffebeb; color: var(--ios-red); font-weight: bold; }
+
+        /* 하단 실행 버튼 */
+        .bottom-action {
+            padding: 16px; background: var(--ios-bg); position: sticky; bottom: 0;
+            backdrop-filter: blur(10px);
+        }
+        .ios-btn {
+            width: 100%; background: linear-gradient(135deg, #34C759, #28a745);
+            color: white; border: none; padding: 16px; border-radius: 14px;
+            font-size: 17px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+        }
+        .ios-btn:active { transform: scale(0.98); }
+
+        /* --- 메인 화면 (결과 보드) --- */
+        #main-board {
+            flex: 1; position: relative; padding: 30px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* 역할 카드 그리드 */
+        #role-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;
+        }
+
+        .role-card {
+            background: var(--ios-card); border-radius: 16px; padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative;
+            border: 2px solid transparent; transition: transform 0.2s;
+        }
+        .role-card:hover { transform: translateY(-5px); }
+        
+        .role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .role-title { font-size: 18px; font-weight: 800; color: #333; }
+        .role-badge { font-size: 11px; padding: 4px 8px; border-radius: 20px; font-weight: bold; }
+
+        /* 배정된 학생 태그 */
+        .assigned-student {
+            display: inline-block; background: #f0f2f5; padding: 6px 12px; border-radius: 8px;
+            font-size: 14px; font-weight: 600; color: #333; margin: 4px;
+            border-left: 3px solid var(--ios-blue);
+        }
+
+        /* --- 하단 공정성 그래프 --- */
+        #stats-section {
+            background: rgba(255,255,255,0.6); border-radius: 16px; padding: 20px;
+            backdrop-filter: blur(10px); margin-top: auto;
+        }
+        .stats-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; color: #555; }
+        
+        .bar-container { display: flex; align-items: center; margin-bottom: 6px; }
+        .bar-label { width: 50px; font-size: 12px; font-weight: 600; text-align: right; margin-right: 10px; }
+        .bar-track { flex: 1; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; background: var(--ios-blue); width: 0%; transition: width 0.5s; }
+        .bar-value { width: 30px; font-size: 11px; margin-left: 8px; color: #666; }
+
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="ios-header">
+            <h1>AI 청소 매니저</h1>
+            <p>공정함의 끝판왕, 업무 강도 자동 조절</p>
+        </div>
+
+        <div class="list-group">
+            <div class="list-item">
+                <span class="list-label">학생 수</span>
+                <select id="student-count" onchange="initStudents()">
+                    </select>
+            </div>
+        </div>
+
+        <div class="ios-header" style="padding-top:10px; padding-bottom:5px;">
+            <span style="font-size:12px; color:var(--ios-gray); font-weight:600;">청소 구역 및 역할 설정</span>
+        </div>
+        <div class="list-group" id="role-list-container" style="padding:10px;">
+            </div>
+
+        <div class="ios-header" style="padding-bottom:5px;">
+            <span style="font-size:12px; color:var(--ios-gray); font-weight:600;">학생 명단 & 제약 조건</span>
+        </div>
+        <div class="list-group" id="student-list-container">
+            </div>
+
+        <div class="bottom-action">
+            <button class="ios-btn" onclick="runAssignment()">
+                ✨ 공정하게 배정하기
+            </button>
+        </div>
+    </div>
+
+    <div id="main-board">
+        
+        <div>
+            <h2 style="margin:0 0 15px 0; color:#333;">📢 이번 주 역할 배정표</h2>
+            <div id="role-grid">
+                <div style="grid-column: 1/-1; text-align: center; color: #999; padding: 40px;">
+                    왼쪽의 '배정하기' 버튼을 눌러주세요.
+                </div>
+            </div>
+        </div>
+
+        <div id="stats-section">
+            <div class="stats-title">📊 누적 업무 강도 (Fairness Check)</div>
+            <div id="stats-chart">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 전역 변수 ---
+        let roles = [
+            { id: 1, name: '교실 쓸기', difficulty: 3, count: 2 }, // 난이도 3(상)
+            { id: 2, name: '칠판 닦기', difficulty: 2, count: 1 }, // 난이도 2(중)
+            { id: 3, name: '우유 당번', difficulty: 2, count: 2 },
+            { id: 4, name: '책상 줄맞추기', difficulty: 1, count: 2 }, // 난이도 1(하)
+            { id: 5, name: '복도 청소', difficulty: 3, count: 2 },
+            { id: 6, name: '1인 1역(휴식)', difficulty: 0, count: 99 } // 남는 인원용
+        ];
+
+        // 학생 데이터 (누적 점수 포함)
+        let students = [];
+        
+        // 랜덤 이름
+        const nameDB = ['민준','서준','도윤','예준','시우','하준','지호','지우','서현','서연','지유','지아','수아','소은','유진'];
+        function getRandomName() { return nameDB[Math.floor(Math.random()*nameDB.length)]; }
+
+        // --- 초기화 ---
+        window.onload = function() {
+            // 학생 수 드롭박스
+            const sel = document.getElementById('student-count');
+            for(let i=1; i<=40; i++) {
+                let opt = document.createElement('option');
+                opt.value = i; opt.text = i+"명";
+                if(i===12) opt.selected = true;
+                sel.appendChild(opt);
+            }
+
+            renderRoleList();
+            initStudents();
+        };
+
+        // --- 1. 역할(Role) 관리 로직 ---
+        function renderRoleList() {
+            const container = document.getElementById('role-list-container');
+            container.innerHTML = '';
+
+            roles.forEach((role, idx) => {
+                // 휴식 역할은 수정 불가로 숨기거나 고정
+                if(role.difficulty === 0) return; 
+
+                const div = document.createElement('div');
+                div.className = 'role-row';
+                
+                // 난이도 클래스
+                let diffClass = role.difficulty === 3 ? 'diff-high' : (role.difficulty === 2 ? 'diff-mid' : 'diff-low');
+                let diffText = role.difficulty === 3 ? '상' : (role.difficulty === 2 ? '중' : '하');
+
+                div.innerHTML = `
+                    <input type="text" class="role-input" value="${role.name}" onchange="updateRole(${idx}, 'name', this.value)">
+                    <input type="number" class="count-input" value="${role.count}" min="1" onchange="updateRole(${idx}, 'count', this.value)">
+                    <div class="diff-btn ${diffClass}" onclick="toggleDiff(${idx})">${diffText}</div>
+                    <div class="del-btn" onclick="deleteRole(${idx})">✖</div>
+                `;
+                container.appendChild(div);
+            });
+
+            // 추가 버튼
+            const addBtn = document.createElement('div');
+            addBtn.className = 'add-btn';
+            addBtn.innerText = '+ 새 역할 추가';
+            addBtn.onclick = addRole;
+            container.appendChild(addBtn);
+        }
+
+        function updateRole(idx, field, val) {
+            if(field === 'count') val = parseInt(val);
+            roles[idx][field] = val;
+        }
+
+        function toggleDiff(idx) {
+            roles[idx].difficulty = roles[idx].difficulty >= 3 ? 1 : roles[idx].difficulty + 1;
+            renderRoleList();
+        }
+
+        function deleteRole(idx) {
+            if(confirm('이 역할을 삭제할까요?')) {
+                roles.splice(idx, 1);
+                renderRoleList();
+            }
+        }
+
+        function addRole() {
+            roles.splice(roles.length-1, 0, { id: Date.now(), name: '새 구역', difficulty: 1, count: 1 });
+            renderRoleList();
+        }
+
+        // --- 2. 학생 관리 로직 ---
+        function initStudents() {
+            const count = parseInt(document.getElementById('student-count').value);
+            const container = document.getElementById('student-list-container');
+            
+            // 기존 데이터 유지하면서 리사이징
+            let newStudents = [];
+            for(let i=0; i<count; i++) {
+                if(i < students.length) {
+                    newStudents.push(students[i]);
+                } else {
+                    newStudents.push({ 
+                        id: i, 
+                        name: getRandomName(), 
+                        score: Math.floor(Math.random() * 10), // 시뮬레이션을 위해 랜덤 초기 점수 부여
+                        injured: false 
+                    });
+                }
+            }
+            students = newStudents;
+            renderStudentList();
+        }
+
+        function renderStudentList() {
+            const container = document.getElementById('student-list-container');
+            container.innerHTML = '';
+            
+            students.forEach((stu, idx) => {
+                const div = document.createElement('div');
+                div.className = 'student-row';
+                
+                let injuredClass = stu.injured ? 'active' : '';
+                let injuredText = stu.injured ? '🚑 부상/제외' : '💪 건강함';
+
+                div.innerHTML = `
+                    <span class="student-num">${idx+1}</span>
+                    <input type="text" class="student-input student-name" style="text-align:left;" value="${stu.name}" onchange="students[${idx}].name=this.value">
+                    <div class="constraint-btn ${injuredClass}" onclick="toggleInjured(${idx})">${injuredText}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleInjured(idx) {
+            students[idx].injured = !students[idx].injured;
+            renderStudentList();
+        }
+
+        // --- 3. AI 배정 알고리즘 (핵심) ---
+        function runAssignment() {
+            // 1. 역할 풀(Slot) 만들기
+            let slots = [];
+            roles.forEach(role => {
+                if(role.difficulty > 0) { // 일반 역할
+                    for(let i=0; i<role.count; i++) slots.push({ ...role }); // 복사해서 넣기
+                }
+            });
+
+            // 2. 학생 수가 역할 수보다 많으면 나머지는 '휴식(1인1역)'으로 채움
+            while(slots.length < students.length) {
+                slots.push({ name: '1인 1역(휴식)', difficulty: 0, id: 999 });
+            }
+            // 학생 수가 더 적으면 슬롯을 줄임 (랜덤하게 뒤에서 자름 - 실제론 중요 역할부터 채워야겠지만 단순화)
+            if(slots.length > students.length) {
+                slots = slots.slice(0, students.length);
+            }
+
+            // 3. 알고리즘: 누적 점수가 낮은 학생에게 힘든 일을 줘야 함 (Fairness)
+            // 학생을 '누적 점수 오름차순'으로 정렬 (점수 낮은 애가 앞)
+            // 단, 매번 똑같으면 안되니까 약간의 랜덤성(Noise) 추가
+            let sortedStudents = [...students].sort((a, b) => {
+                return (a.score + Math.random()*2) - (b.score + Math.random()*2);
+            });
+
+            // 슬롯을 '난이도 내림차순'으로 정렬 (힘든 일이 앞)
+            slots.sort((a, b) => b.difficulty - a.difficulty);
+
+            // 4. 매칭 (Greedy) & 제약 조건 체크
+            let assignments = []; // { student, role }
+            
+            // 힘든 일(난이도 3)부터 배정하는데, 부상자는 건너뜀
+            // 이 로직은 복잡하므로, 단순화된 투 패스(Two-pass) 방식 사용
+            
+            // Pass 1: 부상자들은 난이도 3에서 제외하고 예약
+            // Pass 2: 나머지 학생들로 힘든 일부터 채움
+            
+            let finalSlots = new Array(students.length).fill(null);
+            let unassignedStudents = [...sortedStudents]; // 복사본
+
+            // 슬롯 순회 (힘든거 -> 쉬운거)
+            for(let i=0; i<slots.length; i++) {
+                let role = slots[i];
+                
+                // 이 역할을 수행할 최고의 후보 찾기
+                let candidateIndex = -1;
+
+                // 앞에서부터(점수 낮은애부터) 찾되 제약조건 확인
+                for(let j=0; j<unassignedStudents.length; j++) {
+                    let stu = unassignedStudents[j];
+                    
+                    // 제약: 부상자는 난이도 3 불가
+                    if(stu.injured && role.difficulty >= 3) continue;
+                    
+                    candidateIndex = j;
+                    break; 
+                }
+
+                // 만약 적합자가 없으면(전원 부상자 등) 그냥 아무나(맨 앞) 시킴
+                if(candidateIndex === -1) candidateIndex = 0;
+
+                let selectedStudent = unassignedStudents.splice(candidateIndex, 1)[0];
+                
+                // 결과 저장
+                assignments.push({
+                    studentId: selectedStudent.id,
+                    studentName: selectedStudent.name,
+                    roleName: role.name,
+                    roleDiff: role.difficulty
+                });
+
+                // 점수 업데이트 (시뮬레이션)
+                let originalStu = students.find(s => s.id === selectedStudent.id);
+                originalStu.score += role.difficulty;
+            }
+
+            renderResults(assignments);
+            renderStats();
+        }
+
+        // --- 4. 결과 렌더링 ---
+        function renderResults(assignments) {
+            const grid = document.getElementById('role-grid');
+            grid.innerHTML = '';
+
+            // 역할별로 그룹화
+            let grouped = {};
+            // 먼저 모든 역할 키 생성 (순서 유지 위해)
+            roles.forEach(r => grouped[r.name] = { ...r, students: [] });
+            
+            assignments.forEach(a => {
+                if(grouped[a.roleName]) {
+                    grouped[a.roleName].students.push(a.studentName);
+                }
+            });
+
+            // 카드 생성
+            for(let key in grouped) {
+                let item = grouped[key];
+                // 배정된 학생이 없어도 카드는 보여줌 (설정된 역할이니까)
+                
+                const card = document.createElement('div');
+                card.className = 'role-card';
+                
+                // 난이도 배지
+                let badgeClass = item.difficulty === 3 ? 'diff-high' : (item.difficulty === 2 ? 'diff-mid' : 'diff-low');
+                let badgeText = item.difficulty === 3 ? '🔥 힘듦(상)' : (item.difficulty === 2 ? '💧 보통(중)' : '🌱 쉬움(하)');
+                if(item.difficulty === 0) { badgeClass = 'diff-low'; badgeText = '💤 휴식'; }
+
+                // 테두리 색상 (난이도별)
+                if(item.difficulty === 3) card.style.borderColor = '#ffcccc';
+                if(item.difficulty === 1) card.style.borderColor = '#e8f5e9';
+
+                let studentsHtml = item.students.map(name => `<span class="assigned-student">${name}</span>`).join('');
+                if(item.students.length === 0) studentsHtml = '<span style="color:#ccc; font-size:13px;">배정 인원 없음</span>';
+
+                card.innerHTML = `
+                    <div class="role-header">
+                        <span class="role-title">${item.name}</span>
+                        <span class="role-badge ${badgeClass}">${badgeText}</span>
+                    </div>
+                    <div>${studentsHtml}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function renderStats() {
+            const chart = document.getElementById('stats-chart');
+            chart.innerHTML = '';
+
+            // 점수 최대값 찾기 (그래프 비율용)
+            let maxScore = Math.max(...students.map(s => s.score)) || 1;
+
+            students.forEach(stu => {
+                const row = document.createElement('div');
+                row.className = 'bar-container';
+                
+                let width = (stu.score / maxScore) * 100;
+                let color = width > 80 ? '#FF3B30' : (width < 30 ? '#34C759' : '#007AFF');
+
+                row.innerHTML = `
+                    <div class="bar-label">${stu.name}</div>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: ${width}%; background: ${color};"></div>
+                    </div>
+                    <div class="bar-value">${stu.score}</div>
+                `;
+                chart.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
