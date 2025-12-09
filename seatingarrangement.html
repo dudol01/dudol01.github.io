@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>우리 반 자리 배치 프로그램</title>
+    <title>우리 반 자리 배치 프로그램 (자석 정렬)</title>
     <style>
         /* --- CSS 스타일 --- */
         :root {
@@ -24,7 +24,7 @@
             overflow: hidden;
         }
 
-        /* 왼쪽 사이드바 (설정 및 명렬표) */
+        /* 왼쪽 사이드바 */
         #sidebar {
             width: var(--sidebar-width);
             background: white;
@@ -101,7 +101,7 @@
         #classroom {
             flex: 1;
             position: relative;
-            background-color: #eaddcf; /* 마룻바닥 색상 느낌 */
+            background-color: #eaddcf;
             background-image: radial-gradient(#d6c4b0 15%, transparent 16%),
                               radial-gradient(#d6c4b0 15%, transparent 16%);
             background-size: 20px 20px;
@@ -138,20 +138,26 @@
             color: #333;
             cursor: grab;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            user-select: none; /* 드래그 중 텍스트 선택 방지 */
-            transition: transform 0.1s;
+            user-select: none;
             z-index: 1;
+            /* 위치 이동 시 부드러운 효과 (드래그 중에는 JS로 제거함) */
+            transition: transform 0.1s; 
+        }
+
+        /* 드래그 후 자석처럼 붙을 때 부드럽게 이동하는 클래스 */
+        .desk.snapping {
+            transition: left 0.3s ease-out, top 0.3s ease-out, transform 0.1s;
         }
 
         .desk:active {
             cursor: grabbing;
             transform: scale(1.05);
-            z-index: 100; /* 드래그 중인 요소를 최상위로 */
+            z-index: 100;
             box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
         }
 
         .desk span {
-            pointer-events: none; /* 텍스트가 드래그 방해하지 않도록 */
+            pointer-events: none;
         }
     </style>
 </head>
@@ -173,42 +179,43 @@
         <div class="control-group" style="border:none;">
             <button class="secondary" onclick="assignSeats()">🎲 자리 배정하기</button>
             <div style="margin-top:10px; text-align: center; font-size: 12px; color: #666;">
-                * 책상을 드래그하여 배치를 바꿀 수 있습니다.
+                * 책상을 놓으면 줄에 맞춰 자동 정렬됩니다.
             </div>
         </div>
     </div>
 
     <div id="classroom">
         <div id="blackboard">칠 판</div>
-        </div>
+    </div>
 
     <script>
         /* --- Javascript 로직 --- */
 
-        // 랜덤 이름 생성을 위한 데이터
+        // 전역 설정 변수 (그리드 간격 및 시작 위치)
+        let GRID_GAP_X = 140; // 가로 간격
+        let GRID_GAP_Y = 80;  // 세로 간격
+        let GRID_START_X = 0; // 교실 중앙 정렬을 위해 initClass에서 계산됨
+        let GRID_START_Y = 100; // 칠판 아래 시작점
+
         const lastNames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임', '한', '오', '서', '신', '권', '황', '안', '송', '류', '전'];
         const firstNames = ['민준', '서준', '도윤', '예준', '시우', '하준', '지호', '주원', '지우', '서현', '서연', '지유', '지아', '수아', '소은', '하은', '유진', '민서', '채원', '다은'];
 
-        // 랜덤 이름 생성 함수
         function getRandomName() {
             const last = lastNames[Math.floor(Math.random() * lastNames.length)];
             const first = firstNames[Math.floor(Math.random() * firstNames.length)];
             return last + first;
         }
 
-        // 초기화 및 입력창/책상 생성
         function initClass() {
             const count = document.getElementById('student-count').value;
             const listContainer = document.getElementById('student-list');
             const classroom = document.getElementById('classroom');
             
-            // 기존 내용 초기화 (칠판 제외)
             listContainer.innerHTML = '';
-            // 칠판은 남기고 나머지(책상) 제거
             const existingDesks = document.querySelectorAll('.desk');
             existingDesks.forEach(desk => desk.remove());
 
-            // 1. 학생 명단 입력창 생성
+            // 1. 학생 명단 생성
             for (let i = 1; i <= count; i++) {
                 const row = document.createElement('div');
                 row.className = 'student-input-row';
@@ -218,7 +225,7 @@
                 
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
-                nameInput.value = getRandomName(); // 초기 랜덤 이름
+                nameInput.value = getRandomName();
                 nameInput.className = 'student-name-input';
                 nameInput.placeholder = '이름';
 
@@ -227,47 +234,36 @@
                 listContainer.appendChild(row);
             }
 
-            // 2. 책상 생성 및 기본 배치 (6열 2행 기준, 하지만 학생 수에 따라 유동적으로)
-            // 요구사항: 기본 2개의 책상 배치 (2열). 
-            // 가로(열) 개수: 2, 세로(행) 개수: 학생수 / 2
-            
-            const cols = 2; // 분단 수
-            const startX = 200; // 시작 X 위치 (화면 중앙 즈음)
-            const startY = 100; // 시작 Y 위치
-            const gapX = 140;   // 가로 간격
-            const gapY = 80;    // 세로 간격
-
-            // 교실 중앙 정렬을 위한 계산
+            // 2. 책상 배치 기준점 계산
+            const cols = 2; // 기본 2분단
             const classroomWidth = classroom.clientWidth;
-            const groupWidth = (cols - 1) * gapX + 100; // 100은 책상 폭
-            const initialOffsetX = (classroomWidth - groupWidth) / 2;
+            // 책상 폭 100px을 고려하여 그룹 전체 너비 계산
+            const groupWidth = (cols - 1) * GRID_GAP_X + 100; 
+            
+            // 전역 변수에 시작점 저장 (중요: 드래그 시 이 값을 기준으로 자석 기능 작동)
+            GRID_START_X = (classroomWidth - groupWidth) / 2;
 
             for (let i = 0; i < count; i++) {
                 const desk = document.createElement('div');
                 desk.className = 'desk';
                 desk.id = 'desk-' + i;
                 
-                // 그리드 배치 계산 (2열 종대)
                 const colIndex = i % cols; 
                 const rowIndex = Math.floor(i / cols);
 
-                const x = initialOffsetX + (colIndex * gapX);
-                const y = startY + (rowIndex * gapY);
+                const x = GRID_START_X + (colIndex * GRID_GAP_X);
+                const y = GRID_START_Y + (rowIndex * GRID_GAP_Y);
 
                 desk.style.left = x + 'px';
                 desk.style.top = y + 'px';
-                
-                // 초기에는 번호만 표시
                 desk.innerHTML = `<span>책상 ${i + 1}</span>`;
                 
                 classroom.appendChild(desk);
-                
-                // 드래그 기능 부여
                 makeDraggable(desk);
             }
         }
 
-        // 드래그 앤 드롭 기능 구현
+        // 드래그 앤 드롭 + 자석 기능(Snap to Grid)
         function makeDraggable(elmnt) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             
@@ -276,11 +272,12 @@
             function dragMouseDown(e) {
                 e = e || window.event;
                 e.preventDefault();
-                // 마우스 시작 위치 가져오기
                 pos3 = e.clientX;
                 pos4 = e.clientY;
                 
-                // 마우스가 움직일 때와 멈췄을 때 이벤트 연결
+                // 드래그 시작 시 부드러운 이동 효과 제거 (즉각적인 반응을 위해)
+                elmnt.classList.remove('snapping');
+                
                 document.onmouseup = closeDragElement;
                 document.onmousemove = elementDrag;
             }
@@ -288,36 +285,43 @@
             function elementDrag(e) {
                 e = e || window.event;
                 e.preventDefault();
-                
-                // 이동 거리 계산
                 pos1 = pos3 - e.clientX;
                 pos2 = pos4 - e.clientY;
                 pos3 = e.clientX;
                 pos4 = e.clientY;
                 
-                // 요소의 새 위치 설정
-                let newTop = elmnt.offsetTop - pos2;
-                let newLeft = elmnt.offsetLeft - pos1;
-
-                // 화면 밖으로 나가지 않도록 경계 설정 (선택사항)
-                // const parent = elmnt.parentElement;
-                // if(newTop < 0) newTop = 0;
-                // if(newLeft < 0) newLeft = 0;
-                
-                elmnt.style.top = newTop + "px";
-                elmnt.style.left = newLeft + "px";
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
             }
 
             function closeDragElement() {
-                // 마우스 버튼을 놓으면 이벤트 해제
                 document.onmouseup = null;
                 document.onmousemove = null;
+
+                // --- 자석(Snap) 로직 시작 ---
+                // 현재 위치에서 시작점(GRID_START)을 뺀 값을 격자 간격(GRID_GAP)으로 나누어 반올림
+                // 이렇게 하면 가장 가까운 '칸'의 인덱스(0, 1, 2...)가 나옵니다.
+                let colIndex = Math.round((elmnt.offsetLeft - GRID_START_X) / GRID_GAP_X);
+                let rowIndex = Math.round((elmnt.offsetTop - GRID_START_Y) / GRID_GAP_Y);
+
+                // 인덱스를 다시 좌표로 변환
+                let newLeft = GRID_START_X + (colIndex * GRID_GAP_X);
+                let newTop = GRID_START_Y + (rowIndex * GRID_GAP_Y);
+
+                // 화면 밖으로 너무 멀리 나가지 않게 최소값 제한 (선택사항)
+                if (rowIndex < 0) newTop = GRID_START_Y; // 칠판 위로는 못 가게
+
+                // 부드러운 이동 효과 추가
+                elmnt.classList.add('snapping');
+                
+                // 위치 확정
+                elmnt.style.left = newLeft + "px";
+                elmnt.style.top = newTop + "px";
+                // --- 자석 로직 끝 ---
             }
         }
 
-        // 자리 배정 로직 (Fisher-Yates Shuffle)
         function assignSeats() {
-            // 1. 현재 입력된 학생 이름 가져오기
             const inputs = document.querySelectorAll('.student-name-input');
             let names = [];
             inputs.forEach(input => {
@@ -328,20 +332,16 @@
                 }
             });
 
-            // 2. 이름 섞기
             for (let i = names.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [names[i], names[j]] = [names[j], names[i]];
             }
 
-            // 3. 책상에 이름 넣기
             const desks = document.querySelectorAll('.desk');
             
-            // 책상 개수와 학생 수 중 작은 수만큼 반복
-            const count = Math.min(desks.length, names.length);
-
-            // 간단한 애니메이션 효과를 위해 잠시 내용 지우기
+            // 애니메이션: 잠깐 뒤집는 효과처럼 텍스트 숨김
             desks.forEach(desk => {
+                desk.style.transition = 'background-color 0.3s';
                 desk.style.backgroundColor = '#fff';
                 desk.innerText = '...';
             });
@@ -353,12 +353,11 @@
                         desk.innerText = names[index];
                     }
                 });
-            }, 300); // 0.3초 딜레이 후 이름 공개
+            }, 300);
         }
 
-        // 페이지 로드 시 기본 실행
         window.onload = initClass;
-
+        window.addEventListener('resize', initClass); // 창 크기 조절 시 재정렬
     </script>
 </body>
 </html>
