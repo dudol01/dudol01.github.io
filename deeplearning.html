@@ -3,404 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>로봇의 과일 분류 대작전 (통합본)</title>
+    <title>AI 몬스터 연구소 👾</title>
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
-        /* --- CSS 스타일 시작 --- */
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #00CEC9;
+            --accent: #FAB1A0;
+            --bg: #dfe6e9;
+            --card-bg: #ffffff;
+        }
+
         body {
             font-family: 'Jua', sans-serif;
-            background-color: #E0F7FA;
+            background-color: var(--bg);
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            user-select: none;
-        }
-
-        .game-container {
-            background-color: #FFFFFF;
-            width: 90%;
-            max-width: 700px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            padding: 25px;
-            text-align: center;
-        }
-
-        h1 { color: #FF6F61; margin: 0 0 15px 0; }
-
-        .scoreboard {
-            background-color: #FFF9C4;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            color: #F57F17;
-            font-weight: bold;
-        }
-
-        /* 로봇 영역 */
-        .robot-area {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            margin: 20px 0;
             padding: 20px;
-            background-color: #E1F5FE;
-            border-radius: 15px;
-        }
-
-        #robot-face { width: 100px; height: 100px; object-fit: contain; }
-
-        .speech-bubble {
-            background: #fff;
-            padding: 10px 15px;
-            border-radius: 15px;
-            border: 2px solid #4FC3F7;
-            position: relative;
-            font-size: 1.1rem;
-        }
-
-        /* 과일 스타일 */
-        .fruit { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #555; transition: all 0.3s; }
-        .fruit.apple { background-color: #FF5252; box-shadow: 0 0 10px #FF5252; }
-        .fruit.banana { 
-            background-color: #FFD740; 
-            width: 90px; height: 45px; 
-            border-radius: 10px; 
-            transform: rotate(-10deg);
-        }
-        .fruit.orange { background-color: #FF9800; border-radius: 50%; }
-
-        /* 생각 파이프 */
-        .brain-pipes {
-            background-color: #FBE9E7;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 3px dashed #FFAB91;
-        }
-
-        .pipe-system {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            align-items: flex-end;
-            height: 120px;
-        }
-
-        .pipe-line-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 45%;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
         }
 
-        input[type=range] { width: 80%; cursor: pointer; margin-bottom: 10px; z-index: 10;}
-
-        /* 시각적 파이프 */
-        .visual-pipe {
-            width: 10px; height: 0px;
-            transition: all 0.2s ease-out;
-            border-radius: 5px;
-            min-height: 5px;
+        /* 상단 네비게이션 탭 */
+        .nav-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            z-index: 10;
         }
 
-        .red-pipe-visual { background-color: #FF5252; box-shadow: 0 0 5px #FF5252; }
-        .yellow-pipe-visual { background-color: #FFD740; box-shadow: 0 0 5px #FFD740; }
-
-        #btn-check {
-            background-color: #4CAF50;
-            color: white;
+        .tab-btn {
+            background: #b2bec3;
             border: none;
-            padding: 12px 40px;
-            font-size: 1.3rem;
-            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            border-radius: 15px;
             cursor: pointer;
-            font-family: 'Jua', sans-serif;
-            box-shadow: 0 4px 0 #388E3C;
+            color: white;
+            font-family: 'Jua';
+            transition: all 0.3s;
+            box-shadow: 0 5px 0 #636e72;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+
+        /* 메인 게임 화면 */
+        .game-screen {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 800px;
+            height: 600px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            display: none; /* JS로 제어 */
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .game-screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            animation: fadeIn 0.5s;
+        }
+
+        h2 { font-size: 2rem; color: #2d3436; margin: 0; }
+        p { font-size: 1.2rem; color: #636e72; }
+
+        /* --- STAGE 1: 데이터 수집 --- */
+        .data-collection-area {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .monster-card {
+            border: 4px dashed #bdc3c7;
+            border-radius: 20px;
+            padding: 20px;
+            width: 200px;
+            cursor: pointer;
             transition: transform 0.1s;
         }
-        #btn-check:active { transform: translateY(4px); box-shadow: none; }
-        #btn-check:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
+        .monster-card:active { transform: scale(0.95); background: #f1f2f6; }
+        
+        .monster-emoji { font-size: 80px; }
+        .data-count { font-size: 1.5rem; color: var(--primary); font-weight: bold; }
 
-        /* 바구니 영역 */
-        .output-baskets { display: flex; gap: 10px; }
-        .basket {
-            flex: 1;
-            padding: 15px 5px;
-            background-color: #f5f5f5;
-            border: 3px solid #cfcfcf;
+        /* --- STAGE 2: 훈련 (그래프) --- */
+        .training-visual {
+            width: 80%;
+            height: 200px;
+            background: #2d3436;
             border-radius: 10px;
-            transition: all 0.3s;
-            opacity: 0.7;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px;
+            gap: 5px;
+            overflow: hidden;
         }
-        .basket-icon { font-size: 2rem; margin-bottom: 5px; }
-        .basket.active { 
-            opacity: 1; border-color: #2196F3; background-color: #E3F2FD; 
-            transform: scale(1.1); box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
-        }
-        .basket.locked { background-color: #e0e0e0; color: #999; border-style: dashed;}
 
-        /* 모달 */
-        .hidden { display: none !important; }
-        #feedback-modal {
-            position: fixed; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white; padding: 30px;
-            width: 80%; max-width: 400px;
-            border-radius: 20px; border: 5px solid #4CAF50;
-            box-shadow: 0 0 100px rgba(0,0,0,0.5);
+        .loss-bar {
+            flex: 1;
+            background: var(--accent);
+            border-radius: 5px 5px 0 0;
+            transition: height 0.5s;
+        }
+        
+        .brain-container { font-size: 100px; margin: 20px; animation: float 3s infinite ease-in-out; }
+        
+        #train-btn {
+            background: var(--secondary);
+            font-size: 2rem;
+            padding: 20px 60px;
+            border-radius: 50px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #00b894;
+            font-family: 'Jua';
+        }
+        #train-btn:active { transform: translateY(8px); box-shadow: none; }
+        #train-btn:disabled { background: #b2bec3; box-shadow: none; cursor: not-allowed; }
+
+        /* --- STAGE 3: 실전 테스트 --- */
+        .test-zone {
+            display: flex;
+            align-items: center;
+            gap: 50px;
+        }
+        .unknown-monster {
+            font-size: 120px;
+            background: #eee;
+            border-radius: 50%;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 5px solid #bdc3c7;
+        }
+        .ai-thinking {
+            font-size: 1.5rem;
+            background: #fff;
+            border: 3px solid var(--primary);
+            padding: 20px;
+            border-radius: 20px;
+            position: relative;
+            min-width: 200px;
+        }
+        /* 말풍선 꼬리 */
+        .ai-thinking::after {
+            content: ''; position: absolute; left: -20px; top: 50%;
+            border-width: 10px; border-style: solid;
+            border-color: transparent var(--primary) transparent transparent;
+        }
+
+        /* 애니메이션 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .pulse { animation: pulse 0.2s; }
+
+        /* 결과 모달 */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex; justify-content: center; align-items: center;
             z-index: 100;
-            animation: popIn 0.3s;
         }
-        #feedback-modal.wrong { border-color: #FF5252; }
-        @keyframes popIn { from { transform: translate(-50%, -60%) scale(0.8); opacity: 0;} to { transform: translate(-50%, -50%) scale(1); opacity: 1;} }
+        .hidden { display: none !important; }
+        .modal-content {
+            background: white; padding: 40px; border-radius: 20px; text-align: center;
+            box-shadow: 0 0 30px rgba(255,255,255,0.5);
+            animation: fadeIn 0.3s;
+        }
+        .modal-btn {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            font-size: 1.2rem; border-radius: 10px; cursor: pointer; font-family: 'Jua'; margin-top: 20px;
+        }
 
-        #btn-next {
-            padding: 10px 25px; font-size: 1.1rem;
-            background: #2196F3; color: white; border:none; border-radius: 5px; cursor: pointer; font-family: 'Jua';
-        }
-        /* --- CSS 스타일 끝 --- */
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <header>
-            <h1>🍓 로봇의 과일 분류 대작전! 🍌</h1>
-            <div class="scoreboard">
-                <span>점수: <span id="score">0</span></span> | 
-                <span>최고 기록: <span id="high-score">0</span></span>
-            </div>
-        </header>
 
-        <main>
-            <section class="robot-area">
-                <div class="robot-wrapper">
-                    <img id="robot-face" src="assets/images/robot_normal.png" alt="🤖" onerror="this.style.display='none'; document.getElementById('emoji-fallback').style.display='block';">
-                    <div id="emoji-fallback" style="display:none; font-size:80px;">🤖</div>
-                </div>
-                
-                <div class="conveyor-belt">
-                    <div id="current-fruit" class="fruit"></div>
-                    <div class="speech-bubble" id="robot-speech">이 과일은 뭐지?</div>
-                </div>
-            </section>
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab(1)">1. 데이터 수집 📸</button>
+        <button class="tab-btn" onclick="switchTab(2)">2. AI 뇌 훈련 🧠</button>
+        <button class="tab-btn" onclick="switchTab(3)">3. 실전 테스트 🎮</button>
+    </div>
 
-            <section class="brain-pipes">
-                <h2>🧠 로봇의 뇌 (가중치 조절)</h2>
-                <p>파이프가 굵을수록 로봇은 그 색깔을 중요하게 생각해요!</p>
-                
-                <div class="pipe-system">
-                    <div class="pipe-line-wrapper">
-                        <label>빨강 중요도 🔴</label>
-                        <input type="range" id="weight-red" min="0" max="100" value="50">
-                        <div class="visual-pipe red-pipe-visual" id="visual-red"></div>
-                    </div>
-                    <div class="pipe-line-wrapper">
-                        <label>노랑 중요도 🟡</label>
-                        <input type="range" id="weight-yellow" min="0" max="100" value="50">
-                        <div class="visual-pipe yellow-pipe-visual" id="visual-yellow"></div>
-                    </div>
-                </div>
-
-                <button id="btn-check">결과 확인하기!</button>
-            </section>
-
-            <section class="output-baskets">
-                <div class="basket" id="basket-apple"><div class="basket-icon">🍎</div><div>사과</div></div>
-                <div class="basket" id="basket-banana"><div class="basket-icon">🍌</div><div>바나나</div></div>
-                <div class="basket locked" id="basket-orange"><div class="basket-icon">🔒</div><div>오렌지(200점)</div></div>
-            </section>
-        </main>
+    <div id="stage-1" class="game-screen active">
+        <h2>STEP 1: 몬스터 사진을 모아주세요!</h2>
+        <p>AI는 아직 아는 게 없어요. 카드를 클릭해서 데이터를 "냠냠" 먹여주세요.</p>
         
-        <div id="feedback-modal" class="hidden">
-            <h2 id="feedback-title">정답입니다!</h2>
-            <p id="feedback-message">메시지 내용</p>
-            <button id="btn-next">다음 문제</button>
+        <div class="data-collection-area">
+            <div class="monster-card" onclick="collectData('slime')">
+                <div class="monster-emoji">🦠</div>
+                <h3>슬라임</h3>
+                <div class="data-count">수집: <span id="count-slime">0</span>장</div>
+            </div>
+            <div class="monster-card" onclick="collectData('ghost')">
+                <div class="monster-emoji">👻</div>
+                <h3>유령</h3>
+                <div class="data-count">수집: <span id="count-ghost">0</span>장</div>
+            </div>
+            <div class="monster-card" onclick="collectData('alien')">
+                <div class="monster-emoji">👾</div>
+                <h3>외계인</h3>
+                <div class="data-count">수집: <span id="count-alien">0</span>장</div>
+            </div>
+        </div>
+        <p style="color: var(--primary); font-size: 1rem;">* 데이터가 많을수록 나중에 AI가 더 똑똑해집니다! (최소 10장씩 모으세요)</p>
+    </div>
+
+    <div id="stage-2" class="game-screen">
+        <h2>STEP 2: 오차(Loss)를 줄여라!</h2>
+        <p>버튼을 연타해서 AI의 뇌를 훈련시키세요! 그래프가 바닥으로 내려가야 합니다.</p>
+        
+        <div class="brain-container" id="brain">🧠</div>
+        
+        <div class="training-visual" id="loss-chart">
+            </div>
+        
+        <div style="margin-top: 20px;">
+            <p>현재 오차율: <span id="loss-value" style="color:red; font-size:1.5rem;">100</span>%</p>
+            <p>현재 지능(Epoch): <span id="epoch-value">0</span> 세대</p>
+        </div>
+
+        <button id="train-btn" onclick="trainAI()">⚡ 훈련하기 (클릭!)</button>
+    </div>
+
+    <div id="stage-3" class="game-screen">
+        <h2>STEP 3: 몬스터 정체 밝히기</h2>
+        <p>훈련된 AI가 몬스터를 보고 정체를 추측합니다.</p>
+        
+        <div class="test-zone">
+            <div class="unknown-monster" id="test-monster">❓</div>
+            <div class="ai-thinking">
+                <p id="ai-status">음... 분석 중...</p>
+                <h1 id="ai-guess" style="color:var(--primary)">?</h1>
+                <p id="ai-confidence" style="font-size:0.8rem; color:#b2bec3;">확신: 0%</p>
+            </div>
+        </div>
+
+        <button class="tab-btn" style="background:#00b894; margin-top:30px;" onclick="runTest()">새로운 몬스터 등장!</button>
+    </div>
+
+    <div id="alert-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-msg">메시지</h2>
+            <button class="modal-btn" onclick="closeModal()">확인</button>
         </div>
     </div>
 
-    <audio id="sound-correct" src="assets/sounds/correct.mp3"></audio>
-    <audio id="sound-wrong" src="assets/sounds/wrong.mp3"></audio>
-    <audio id="sound-unlock" src="assets/sounds/unlock.mp3"></audio>
-
     <script>
-        /* --- JS 스크립트 시작 --- */
-        let score = 0;
-        let highScore = localStorage.getItem('highScore') || 0;
-        let currentFruitType = ''; 
-        let difficultyLevel = 1; 
-        const UNLOCK_SCORE = 200; 
+        // --- 게임 상태 변수 ---
+        let collectedData = { slime: 0, ghost: 0, alien: 0 };
+        let totalData = 0;
+        let currentLoss = 100; // 오차율 (0이 되면 완벽)
+        let epoch = 0; // 훈련 횟수
+        let isTrained = false;
 
-        const scoreEl = document.getElementById('score');
-        const highScoreEl = document.getElementById('high-score');
-        const currentFruitEl = document.getElementById('current-fruit');
-        const robotSpeech = document.getElementById('robot-speech');
-        const btnCheck = document.getElementById('btn-check');
-        const weightRed = document.getElementById('weight-red');
-        const weightYellow = document.getElementById('weight-yellow');
-        const visualRed = document.getElementById('visual-red');
-        const visualYellow = document.getElementById('visual-yellow');
+        // --- 탭 전환 로직 ---
+        function switchTab(tabNum) {
+            // 모든 화면 숨기기
+            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            // 선택된 화면 보이기
+            document.getElementById(`stage-${tabNum}`).classList.add('active');
+            document.querySelectorAll('.tab-btn')[tabNum-1].classList.add('active');
 
-        // 오디오 요소
-        const soundCorrect = document.getElementById('sound-correct');
-        const soundWrong = document.getElementById('sound-wrong');
-        const soundUnlock = document.getElementById('sound-unlock');
-
-        highScoreEl.textContent = highScore;
-        updatePipeVisuals();
-        nextRound();
-
-        weightRed.addEventListener('input', updatePipeVisuals);
-        weightYellow.addEventListener('input', updatePipeVisuals);
-        btnCheck.addEventListener('click', predict);
-        document.getElementById('btn-next').addEventListener('click', nextRound);
-
-        function updatePipeVisuals() {
-            const rVal = weightRed.value;
-            const yVal = weightYellow.value;
-            visualRed.style.height = (rVal / 2) + 'px'; 
-            visualYellow.style.height = (yVal / 2) + 'px';
-            visualRed.style.width = (10 + rVal * 0.4) + 'px';
-            visualYellow.style.width = (10 + yVal * 0.4) + 'px';
-            robotSpeech.textContent = "흐음... 어디 보자...";
+            if (tabNum === 2) initTrainingChart();
         }
 
-        function nextRound() {
-            document.getElementById('feedback-modal').classList.add('hidden');
-            resetBaskets();
-            setRobotEmotion('normal');
-            btnCheck.disabled = false;
+        // --- STAGE 1: 데이터 수집 ---
+        function collectData(type) {
+            collectedData[type]++;
+            totalData++;
+            document.getElementById(`count-${type}`).innerText = collectedData[type];
+            
+            // 클릭 효과
+            const card = document.activeElement; // 클릭된 요소
+            // 애니메이션은 CSS active로 처리됨
+        }
 
-            if (score >= UNLOCK_SCORE && difficultyLevel === 1) {
-                difficultyLevel = 2;
-                unlockOrange();
+        // --- STAGE 2: 훈련 (핵심 로직) ---
+        function initTrainingChart() {
+            const chart = document.getElementById('loss-chart');
+            chart.innerHTML = '';
+            // 초기 빨간 막대들 생성
+            for(let i=0; i<20; i++) {
+                let bar = document.createElement('div');
+                bar.className = 'loss-bar';
+                bar.style.height = (Math.random() * 50 + 50) + '%'; // 들쑥날쑥한 오차
+                chart.appendChild(bar);
+            }
+        }
+
+        function trainAI() {
+            // 1. 데이터가 너무 적으면 훈련 불가
+            if (totalData < 10) {
+                showModal("🚨 데이터 부족! 1단계에서 몬스터를 10마리 이상 모아오세요.");
                 return;
             }
 
-            let fruits = ['apple', 'banana'];
-            if (difficultyLevel === 2) fruits.push('orange');
+            // 2. 훈련 진행 (오차율 감소)
+            const btn = document.getElementById('train-btn');
+            const brain = document.getElementById('brain');
+            const lossText = document.getElementById('loss-value');
+            const epochText = document.getElementById('epoch-value');
+            const chart = document.getElementById('loss-chart');
 
-            currentFruitType = fruits[Math.floor(Math.random() * fruits.length)];
-            currentFruitEl.className = 'fruit ' + currentFruitType;
-            robotSpeech.textContent = "이 과일은 뭐지? 가르쳐줘!";
-        }
+            // 뇌가 두근거리는 효과
+            brain.classList.remove('pulse');
+            void brain.offsetWidth; // 리플로우 강제 (애니메이션 리셋용)
+            brain.classList.add('pulse');
 
-        function unlockOrange() {
-            alert("🎉 축하합니다! 점수가 올라 새로운 과일 [오렌지]가 등장합니다!");
-            playSound(soundUnlock);
-            document.getElementById('basket-orange').classList.remove('locked');
-            document.getElementById('basket-orange').innerHTML = '<div class="basket-icon">🍊</div><div>오렌지</div>';
-            nextRound();
-        }
+            epoch++;
+            epochText.innerText = epoch;
 
-        function predict() {
-            const rWeight = parseInt(weightRed.value);
-            const yWeight = parseInt(weightYellow.value);
+            // 오차율 계산: 데이터가 많을수록 빨리 줄어듦
+            let learningRate = (totalData / 5); // 학습률
+            currentLoss -= learningRate + (Math.random() * 5); // 랜덤성 추가
+            if (currentLoss < 1) currentLoss = 1;
 
-            const features = {
-                'apple': { r: 90, y: 10 },
-                'banana': { r: 10, y: 90 },
-                'orange': { r: 60, y: 60 }
-            };
-            const currentFeat = features[currentFruitType];
+            lossText.innerText = Math.floor(currentLoss);
 
-            let scoreApple = (currentFeat.r * rWeight) + (currentFeat.y * (100 - yWeight));
-            let scoreBanana = (currentFeat.r * (100 - rWeight)) + (currentFeat.y * yWeight);
+            // 그래프 시각화 (오른쪽으로 흐르며 줄어드는 막대 추가)
+            let newBar = document.createElement('div');
+            newBar.className = 'loss-bar';
+            newBar.style.height = currentLoss + '%';
+            newBar.style.background = currentLoss < 20 ? '#00b894' : '#FAB1A0'; // 오차가 줄면 초록색
             
-            let orangeBonus = 0;
-            if (rWeight > 40 && yWeight > 40) orangeBonus = 3000; 
-            let scoreOrange = (currentFeat.r * rWeight * 0.5) + (currentFeat.y * yWeight * 0.5) + orangeBonus;
+            chart.appendChild(newBar);
+            if(chart.children.length > 30) chart.removeChild(chart.firstChild); // 오래된 막대 삭제
 
-            if (difficultyLevel === 1) scoreOrange = -1;
-
-            let prediction = '';
-            if (scoreApple >= scoreBanana && scoreApple >= scoreOrange) prediction = 'apple';
-            else if (scoreBanana >= scoreApple && scoreBanana >= scoreOrange) prediction = 'banana';
-            else prediction = 'orange';
-
-            resetBaskets();
-            document.getElementById('basket-' + prediction).classList.add('active');
-            checkAnswer(prediction);
-        }
-
-        function checkAnswer(prediction) {
-            btnCheck.disabled = true;
-            const modal = document.getElementById('feedback-modal');
-            const title = document.getElementById('feedback-title');
-            const msg = document.getElementById('feedback-message');
-
-            modal.classList.remove('hidden', 'wrong');
-
-            if (prediction === currentFruitType) {
-                score += (currentFruitType === 'orange' ? 20 : 10);
-                updateScore();
-                setRobotEmotion('happy');
-                playSound(soundCorrect);
-                title.textContent = "정답입니다! ⭕";
-                title.style.color = "#4CAF50";
-                msg.textContent = "로봇이 제대로 배웠네요! 참 잘했어요.";
-            } else {
-                score = Math.max(0, score - 5);
-                updateScore();
-                setRobotEmotion('sad');
-                playSound(soundWrong);
-                modal.classList.add('wrong');
-                title.textContent = "틀렸어요! ❌";
-                title.style.color = "#FF5252";
-                msg.innerHTML = `이건 <b>${getFruitName(currentFruitType)}</b>였어요.<br>파이프 두께를 조절해서 힌트를 다시 줘볼까요?`;
+            // 3. 훈련 완료 체크
+            if (currentLoss <= 10) {
+                isTrained = true;
+                showModal("🎉 훈련 완료! AI가 매우 똑똑해졌습니다. 3단계로 가보세요!");
+                btn.style.background = "#00b894";
+                btn.innerText = "훈련 완료 (최적화됨)";
             }
         }
 
-        function updateScore() {
-            scoreEl.textContent = score;
-            if (score > highScore) {
-                highScore = score;
-                highScoreEl.textContent = highScore;
-                localStorage.setItem('highScore', highScore);
-            }
-        }
+        // --- STAGE 3: 실전 테스트 ---
+        function runTest() {
+            const monsterEl = document.getElementById('test-monster');
+            const guessEl = document.getElementById('ai-guess');
+            const statusEl = document.getElementById('ai-status');
+            const confEl = document.getElementById('ai-confidence');
 
-        function resetBaskets() {
-            document.querySelectorAll('.basket').forEach(b => b.classList.remove('active'));
-        }
-
-        function setRobotEmotion(emotion) {
-            let fileName = 'robot_normal.png';
-            if (emotion === 'happy') fileName = 'robot_happy.png';
-            if (emotion === 'sad') fileName = 'robot_sad.png';
-            const img = document.getElementById('robot-face');
-            img.src = `assets/images/${fileName}`;
+            // 1. 랜덤 몬스터 등장
+            const types = ['slime', 'ghost', 'alien'];
+            const emojis = {'slime':'🦠', 'ghost':'👻', 'alien':'👾'};
+            const names = {'slime':'슬라임', 'ghost':'유령', 'alien':'외계인'};
             
-            // 이미지가 없을 때를 대비한 처리
-            const fallback = document.getElementById('emoji-fallback');
-            if(img.style.display === 'none' || img.width === 0) {
-                 img.style.display = 'none';
-                 fallback.style.display = 'block';
-                 if(emotion === 'happy') fallback.textContent = '🥰';
-                 else if(emotion === 'sad') fallback.textContent = '😭';
-                 else fallback.textContent = '🤖';
-            } else {
-                 img.style.display = 'block';
-                 fallback.style.display = 'none';
-            }
+            const answer = types[Math.floor(Math.random() * types.length)];
+            
+            monsterEl.innerText = emojis[answer];
+            monsterEl.style.animation = "pulse 0.5s";
+
+            // 2. AI 생각 중...
+            statusEl.innerText = "데이터 스캔 중...";
+            guessEl.innerText = "???";
+            confEl.innerText = "";
+
+            setTimeout(() => {
+                // 3. 결과 판정
+                if (!isTrained) {
+                    // 훈련 안 했을 때: 엉터리 추측
+                    statusEl.innerText = "모르겠어요...";
+                    guessEl.innerText = "응?";
+                    confEl.innerText = "확신: 0% (훈련이 필요해요!)";
+                } else {
+                    // 훈련 했을 때: 데이터 비율에 따라 정확도 결정
+                    // 특정 몬스터 데이터가 적으면 틀릴 수도 있음!
+                    let myDataCount = collectedData[answer];
+                    let chance = (myDataCount / totalData) * 100 + (100 - currentLoss); 
+                    
+                    // 최대 99%
+                    chance = Math.min(chance, 99);
+                    
+                    if (Math.random() * 100 < chance) {
+                        // 정답
+                        statusEl.innerText = "알았습니다! 이것은...";
+                        guessEl.innerText = names[answer] + "!";
+                        guessEl.style.color = "#00b894";
+                    } else {
+                        // 오답 (데이터 부족 시 발생)
+                        const wrongAnswer = types[Math.floor(Math.random() * types.length)];
+                        statusEl.innerText = "어... 헷갈리는데...";
+                        guessEl.innerText = names[wrongAnswer] + "?";
+                        guessEl.style.color = "#d63031";
+                    }
+                    confEl.innerText = `확신: ${Math.floor(chance)}% (데이터: ${myDataCount}개)`;
+                }
+            }, 1000); // 1초 뒤 결과
         }
 
-        function playSound(audioEl) {
-            if (audioEl) {
-                audioEl.currentTime = 0;
-                audioEl.play().catch(e => {}); // 에러 무시
-            }
+        // --- 유틸리티 ---
+        function showModal(msg) {
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('alert-modal').classList.add('hidden');
         }
 
-        function getFruitName(type) {
-            if (type === 'apple') return '사과';
-            if (type === 'banana') return '바나나';
-            if (type === 'orange') return '오렌지';
-        }
-        /* --- JS 스크립트 끝 --- */
     </script>
 </body>
 </html>
