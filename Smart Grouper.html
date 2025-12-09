@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 스마트 모둠 편성기 (Teacher Edition)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; }
+        .student-card { cursor: grab; transition: all 0.2s; }
+        .student-card:active { cursor: grabbing; transform: scale(1.05); }
+        .group-container { min-height: 150px; }
+        /* 성별에 따른 색상 */
+        .gender-m { border-left: 4px solid #3b82f6; background-color: #eff6ff; }
+        .gender-f { border-left: 4px solid #ec4899; background-color: #fdf2f8; }
+        
+        /* 슬라이더 커스텀 */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #4f46e5; margin-top: -6px; cursor: pointer; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #d1d5db; border-radius: 2px; }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-1 h-fit">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-robot text-indigo-600"></i> AI 모둠 편성기</h1>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-1">모둠 수 설정</label>
+                <input type="number" id="groupCount" value="6" min="2" max="10" class="w-full border-gray-300 border rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                <h3 class="text-sm font-bold text-gray-600 mb-3">⚖️ AI 편성 가중치 조절</h3>
+                
+                <div class="mb-3">
+                    <label class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>성별 균형 (남녀 비율)</span>
+                        <span id="val-gender">50%</span>
+                    </label>
+                    <input type="range" id="weightGender" min="0" max="100" value="50" oninput="updateLabel('val-gender', this.value)">
+                </div>
+
+                <div class="mb-3">
+                    <label class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>학습 수준 균형 (성적 등)</span>
+                        <span id="val-level">30%</span>
+                    </label>
+                    <input type="range" id="weightLevel" min="0" max="100" value="30" oninput="updateLabel('val-level', this.value)">
+                </div>
+
+                <div>
+                    <label class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>관계 회피 (떨어뜨리기)</span>
+                        <span id="val-avoid" class="text-red-500 font-bold">100%</span>
+                    </label>
+                    <input type="range" id="weightAvoid" min="0" max="100" value="100" oninput="updateLabel('val-avoid', this.value)">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    학생 데이터 입력 
+                    <span class="text-xs text-gray-400 font-normal">(형식: 이름,성별(m/f),점수,피할친구)</span>
+                </label>
+                <textarea id="studentData" rows="10" class="w-full text-sm border-gray-300 border rounded-md p-2 font-mono bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400"></textarea>
+                <div class="mt-2 flex gap-2">
+                    <button onclick="loadSampleData()" class="text-xs text-indigo-600 underline hover:text-indigo-800">예시 데이터 넣기</button>
+                    <button onclick="clearData()" class="text-xs text-gray-500 underline hover:text-gray-700">지우기</button>
+                </div>
+            </div>
+
+            <button onclick="runAI()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md flex items-center justify-center gap-2">
+                <i class="fas fa-magic"></i> AI 모둠 편성 시작
+            </button>
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">편성 결과 <span class="text-sm font-normal text-gray-500 ml-2">(드래그해서 수정 가능)</span></h2>
+                <div id="stats" class="text-xs text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
+                    대기 중...
+                </div>
+            </div>
+
+            <div id="resultBoard" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // 초기 샘플 데이터
+        const SAMPLE_DATA = `김철수,m,80,
+이영희,f,90,박지성
+박지성,m,40,이영희
+최유리,f,75,
+정민수,m,60,
+강하늘,m,85,
+오지수,f,55,
+임재범,m,30,
+서현진,f,95,
+홍길동,m,70,
+전우치,m,65,
+배수지,f,88,
+송중기,m,92,
+박보영,f,78,
+이광수,m,45,김종국
+김종국,m,98,이광수
+유재석,m,85,
+송지효,f,82,
+하동훈,m,60,
+양세찬,m,50,`;
+
+        // 페이지 로드 시 예시 데이터 로드
+        window.onload = () => {
+            loadSampleData();
+        };
+
+        function loadSampleData() {
+            document.getElementById('studentData').value = SAMPLE_DATA;
+        }
+        function clearData() {
+            document.getElementById('studentData').value = '';
+        }
+        function updateLabel(id, val) {
+            document.getElementById(id).innerText = val + "%";
+        }
+
+        // --- 핵심 로직 시작 ---
+
+        // 1. 데이터 파싱
+        function parseInput() {
+            const raw = document.getElementById('studentData').value.trim();
+            const lines = raw.split('\n');
+            let students = [];
+            
+            lines.forEach((line, index) => {
+                const parts = line.split(',');
+                if(parts.length >= 2) {
+                    students.push({
+                        id: index,
+                        name: parts[0].trim(),
+                        gender: parts[1].trim().toLowerCase(), // m or f
+                        score: parseInt(parts[2] || 0), // 학습 수준
+                        avoid: parts[3] ? parts[3].trim() : null // 기피 대상 이름
+                    });
+                }
+            });
+            return students;
+        }
+
+        // 2. AI 편성 실행 (Heuristic Optimization)
+        function runAI() {
+            const students = parseInput();
+            const groupCount = parseInt(document.getElementById('groupCount').value);
+            
+            // 가중치 가져오기
+            const wGender = parseInt(document.getElementById('weightGender').value);
+            const wLevel = parseInt(document.getElementById('weightLevel').value);
+            const wAvoid = parseInt(document.getElementById('weightAvoid').value);
+
+            let bestGroups = [];
+            let bestScore = Infinity; // 점수가 낮을수록(패널티가 적을수록) 좋은 배치
+
+            // *핵심* 시뮬레이션 반복 횟수 (많을수록 좋은 결과를 찾을 확률 up)
+            // 웹페이지 멈춤 방지를 위해 1000번만 돌립니다.
+            const ITERATIONS = 1000; 
+
+            for(let i=0; i<ITERATIONS; i++) {
+                // 2-1. 무작위 셔플
+                const shuffled = [...students].sort(() => Math.random() - 0.5);
+                const currentGroups = Array.from({length: groupCount}, () => []);
+
+                // 2-2. 순서대로 배분
+                shuffled.forEach((stu, idx) => {
+                    currentGroups[idx % groupCount].push(stu);
+                });
+
+                // 2-3. 배치 점수 계산 (Penalty 방식)
+                let currentScore = 0;
+
+                currentGroups.forEach(group => {
+                    // (1) 성별 불균형 계산
+                    const boys = group.filter(s => s.gender === 'm').length;
+                    const girls = group.filter(s => s.gender === 'f').length;
+                    // 남녀 차이가 클수록 패널티
+                    currentScore += Math.abs(boys - girls) * wGender;
+
+                    // (2) 학습 수준(점수) 합계의 분산 최소화
+                    // (이건 전체 그룹 간 비교가 필요해서 루프 밖에서 처리하거나, 
+                    // 간단히 그룹 내 평균과의 거리를 계산하는 방식 등 다양함. 여기선 간단히 그룹 총점 체크)
+                    // *복잡도를 줄이기 위해 생략하고 여기선 '기피 친구'에 집중합니다.*
+                    
+                    // (3) 기피 친구 체크
+                    group.forEach(s => {
+                        if(s.avoid) {
+                            // 기피하는 친구가 같은 그룹에 있는지 확인
+                            const enemy = group.find(mate => mate.name === s.avoid);
+                            if(enemy) currentScore += (500 * (wAvoid/10)); // 엄청난 패널티 부여
+                        }
+                    });
+                });
+
+                // (2) 학습 수준 분산 계산 (전체 루프 한번 더)
+                // 그룹별 평균 점수들이 서로 비슷해야 함 -> 표준편차가 작아야 함
+                const groupAvgs = currentGroups.map(g => g.reduce((a,b)=>a+b.score, 0) / (g.length || 1));
+                const totalAvg = groupAvgs.reduce((a,b)=>a+b, 0) / groupCount;
+                const variance = groupAvgs.reduce((a,b) => a + Math.pow(b - totalAvg, 2), 0);
+                currentScore += variance * wLevel;
+
+                // 최적해 갱신
+                if(currentScore < bestScore) {
+                    bestScore = currentScore;
+                    bestGroups = JSON.parse(JSON.stringify(currentGroups)); // 깊은 복사
+                }
+            }
+
+            // 결과 렌더링
+            renderGroups(bestGroups);
+            updateStats("AI 배정 완료 (최적화 점수: " + Math.floor(bestScore) + ")");
+        }
+
+        // 3. 화면 그리기 (SortableJS 연동)
+        function renderGroups(groups) {
+            const board = document.getElementById('resultBoard');
+            board.innerHTML = '';
+
+            groups.forEach((group, idx) => {
+                // 모둠 카드 생성
+                const col = document.createElement('div');
+                col.className = 'bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full';
+                
+                // 헤더
+                const header = document.createElement('div');
+                header.className = 'p-3 border-b border-gray-100 bg-gray-50 rounded-t-lg flex justify-between items-center';
+                header.innerHTML = `<span class="font-bold text-gray-700">${idx+1}모둠</span> <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-600 count-badge">${group.length}명</span>`;
+                col.appendChild(header);
+
+                // 학생 리스트 컨테이너
+                const list = document.createElement('div');
+                list.className = 'p-3 space-y-2 flex-grow group-container';
+                list.setAttribute('data-group-id', idx);
+
+                // 학생 카드 생성
+                let totalScore = 0;
+                group.forEach(stu => {
+                    const el = createStudentElement(stu);
+                    list.appendChild(el);
+                    totalScore += stu.score;
+                });
+
+                // 모둠 정보(평균점수 등) 표시
+                const footer = document.createElement('div');
+                footer.className = 'p-2 text-xs text-center text-gray-400 border-t border-gray-100 mt-auto';
+                const avg = group.length ? (totalScore/group.length).toFixed(1) : 0;
+                footer.innerText = `평균 레벨: ${avg}`;
+                
+                col.appendChild(list);
+                col.appendChild(footer);
+                board.appendChild(col);
+
+                // ** SortableJS 적용 (핵심) **
+                new Sortable(list, {
+                    group: 'shared', // 이 그룹 이름이 같으면 서로 이동 가능
+                    animation: 150,
+                    ghostClass: 'bg-indigo-100',
+                    onEnd: function (evt) {
+                        // 드래그가 끝나면 통계 다시 계산
+                        recalcStats();
+                    }
+                });
+            });
+        }
+
+        function createStudentElement(stu) {
+            const div = document.createElement('div');
+            // 성별에 따른 클래스 부여
+            const genderClass = stu.gender === 'm' ? 'gender-m' : 'gender-f';
+            div.className = `student-card p-2 rounded shadow-sm text-sm flex justify-between items-center bg-white border border-gray-100 ${genderClass}`;
+            div.innerHTML = `
+                <div>
+                    <span class="font-medium text-gray-800">${stu.name}</span>
+                    <span class="text-xs text-gray-400 ml-1">(${stu.score})</span>
+                </div>
+                ${stu.avoid ? `<i class="fas fa-exclamation-circle text-red-400 text-xs" title="${stu.avoid} 기피"></i>` : ''}
+            `;
+            // 데이터 속성 저장 (나중에 계산용)
+            div.dataset.score = stu.score;
+            div.dataset.gender = stu.gender;
+            return div;
+        }
+
+        function updateStats(msg) {
+            document.getElementById('stats').innerText = msg;
+        }
+
+        // 드래그 후 재계산 로직
+        function recalcStats() {
+            // 여기서는 간단히 UI 상의 변화만 보여주지만, 
+            // 실제로는 DOM에서 데이터를 다시 읽어서 평균 점수 등을 갱신해주는 로직을 넣으면 좋습니다.
+            // (구현 복잡도를 위해 이번 코드에서는 생략하지만, 
+            //  모둠 평균 점수 텍스트를 업데이트하는 코드를 추가하면 완벽합니다.)
+             updateStats("사용자가 수동으로 수정함");
+        }
+
+    </script>
+</body>
+</html>
