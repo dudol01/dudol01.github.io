@@ -2,312 +2,543 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 스마트 모둠 편성기 (Teacher Edition)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Classroom Seat - iOS Style</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f3f4f6; }
-        .student-card { cursor: grab; transition: all 0.2s; }
-        .student-card:active { cursor: grabbing; transform: scale(1.05); }
-        .group-container { min-height: 150px; }
-        /* 성별에 따른 색상 */
-        .gender-m { border-left: 4px solid #3b82f6; background-color: #eff6ff; }
-        .gender-f { border-left: 4px solid #ec4899; background-color: #fdf2f8; }
+        /* --- iOS Design System --- */
+        :root {
+            --ios-bg: #F2F2F7;         /* 시스템 배경색 */
+            --ios-card: #FFFFFF;       /* 카드 배경색 */
+            --ios-blue: #007AFF;       /* 포인트 블루 */
+            --ios-green: #34C759;      /* 성공 그린 */
+            --ios-text: #1C1C1E;       /* 기본 텍스트 */
+            --ios-gray: #8E8E93;       /* 보조 텍스트 */
+            --ios-border: #E5E5EA;     /* 구분선 */
+            --shadow: 0 4px 12px rgba(0,0,0,0.06);
+            --desk-radius: 14px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            background-color: var(--ios-bg);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            color: var(--ios-text);
+            overflow: hidden;
+        }
+
+        /* --- 왼쪽 설정 패널 (Settings App 스타일) --- */
+        #sidebar {
+            width: 340px;
+            background: var(--ios-bg);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+            padding: 20px 0;
+        }
+
+        .ios-header {
+            padding: 0 20px 15px 20px;
+        }
+
+        .ios-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        /* iOS List Group 스타일 */
+        .list-group {
+            background: var(--ios-card);
+            border-radius: 12px;
+            margin: 0 16px 20px 16px;
+            padding: 0 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--ios-border);
+            font-size: 16px;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-label {
+            font-weight: 500;
+        }
+
+        /* 커스텀 셀렉트 박스 */
+        select {
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            color: var(--ios-blue);
+            font-weight: 500;
+            text-align: right;
+            cursor: pointer;
+            outline: none;
+            direction: rtl; /* 화살표 위치 조정 꼼수 */
+        }
+
+        /* 학생 명단 리스트 */
+        #student-list-container {
+            flex: 1;
+            overflow-y: auto;
+            margin: 0 16px 10px 16px;
+        }
+
+        .student-row {
+            background: var(--ios-card);
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            transition: transform 0.1s;
+        }
         
-        /* 슬라이더 커스텀 */
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #4f46e5; margin-top: -6px; cursor: pointer; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #d1d5db; border-radius: 2px; }
+        .student-number {
+            width: 28px;
+            height: 28px;
+            background: var(--ios-bg);
+            color: var(--ios-gray);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .student-input {
+            border: none;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+            background: transparent;
+        }
+        
+        .level-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background-color: var(--ios-bg);
+            color: var(--ios-gray);
+            cursor: pointer;
+        }
+
+        /* 하단 버튼 영역 */
+        .bottom-action {
+            padding: 16px;
+            background: var(--ios-bg);
+            /* glassmorphism effect for footer */
+            backdrop-filter: blur(20px);
+        }
+
+        .ios-btn {
+            width: 100%;
+            background-color: var(--ios-blue);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 10px rgba(0,122,255,0.3);
+        }
+
+        .ios-btn:active {
+            transform: scale(0.96);
+            background-color: #0062cc;
+        }
+
+        /* --- 오른쪽 교실 영역 --- */
+        #classroom {
+            flex: 1;
+            position: relative;
+            background-color: #e5e5ea; /* 책상 배치 배경은 약간 어둡게 */
+            background-image: 
+                radial-gradient(#C7C7CC 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 칠판 */
+        #blackboard {
+            position: absolute;
+            top: 20px;
+            width: 60%;
+            height: 40px;
+            background: #3A3A3C;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255,255,255,0.8);
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 5;
+        }
+
+        /* iOS 위젯 스타일 책상 */
+        .desk {
+            width: 110px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: var(--desk-radius);
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            cursor: grab;
+            user-select: none;
+            z-index: 10;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid transparent; /* 모둠 색상용 */
+        }
+
+        .desk span.name {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--ios-text);
+        }
+        
+        .desk span.group-label {
+            font-size: 10px;
+            color: var(--ios-gray);
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .desk:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .desk.snapping {
+            transition: left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* 모둠별 테두리 색상 (iOS 파스텔톤) */
+        .group-1 { border-color: #FF3B30; background: #FFF0F0; } /* Red */
+        .group-2 { border-color: #FF9500; background: #FFF8E6; } /* Orange */
+        .group-3 { border-color: #FFCC00; background: #FFFDE6; } /* Yellow */
+        .group-4 { border-color: #34C759; background: #E8FBEB; } /* Green */
+        .group-5 { border-color: #007AFF; background: #E6F2FF; } /* Blue */
+        .group-6 { border-color: #5856D6; background: #EFEBFF; } /* Indigo */
+        .group-7 { border-color: #AF52DE; background: #F8E6FF; } /* Purple */
+        .group-8 { border-color: #FF2D55; background: #FFE6EA; } /* Pink */
+
+        /* 스크롤바 숨기기 */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
-<body class="p-6">
+<body>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-1 h-fit">
-            <h1 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-robot text-indigo-600"></i> AI 모둠 편성기</h1>
-            
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">모둠 수 설정</label>
-                <input type="number" id="groupCount" value="6" min="2" max="10" class="w-full border-gray-300 border rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
-                <h3 class="text-sm font-bold text-gray-600 mb-3">⚖️ AI 편성 가중치 조절</h3>
-                
-                <div class="mb-3">
-                    <label class="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>성별 균형 (남녀 비율)</span>
-                        <span id="val-gender">50%</span>
-                    </label>
-                    <input type="range" id="weightGender" min="0" max="100" value="50" oninput="updateLabel('val-gender', this.value)">
-                </div>
-
-                <div class="mb-3">
-                    <label class="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>학습 수준 균형 (성적 등)</span>
-                        <span id="val-level">30%</span>
-                    </label>
-                    <input type="range" id="weightLevel" min="0" max="100" value="30" oninput="updateLabel('val-level', this.value)">
-                </div>
-
-                <div>
-                    <label class="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>관계 회피 (떨어뜨리기)</span>
-                        <span id="val-avoid" class="text-red-500 font-bold">100%</span>
-                    </label>
-                    <input type="range" id="weightAvoid" min="0" max="100" value="100" oninput="updateLabel('val-avoid', this.value)">
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    학생 데이터 입력 
-                    <span class="text-xs text-gray-400 font-normal">(형식: 이름,성별(m/f),점수,피할친구)</span>
-                </label>
-                <textarea id="studentData" rows="10" class="w-full text-sm border-gray-300 border rounded-md p-2 font-mono bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400"></textarea>
-                <div class="mt-2 flex gap-2">
-                    <button onclick="loadSampleData()" class="text-xs text-indigo-600 underline hover:text-indigo-800">예시 데이터 넣기</button>
-                    <button onclick="clearData()" class="text-xs text-gray-500 underline hover:text-gray-700">지우기</button>
-                </div>
-            </div>
-
-            <button onclick="runAI()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md flex items-center justify-center gap-2">
-                <i class="fas fa-magic"></i> AI 모둠 편성 시작
-            </button>
+    <div id="sidebar">
+        <div class="ios-header">
+            <h1>자리 배치</h1>
         </div>
 
-        <div class="lg:col-span-2">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">편성 결과 <span class="text-sm font-normal text-gray-500 ml-2">(드래그해서 수정 가능)</span></h2>
-                <div id="stats" class="text-xs text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
-                    대기 중...
-                </div>
+        <div class="list-group">
+            <div class="list-item">
+                <span class="list-label">학생 수</span>
+                <select id="student-count" onchange="initClass()">
+                    </select>
+            </div>
+            <div class="list-item">
+                <span class="list-label">모둠(조) 개수</span>
+                <select id="group-count">
+                    <option value="0">사용 안 함</option>
+                    <option value="2">2개 조</option>
+                    <option value="3">3개 조</option>
+                    <option value="4" selected>4개 조</option>
+                    <option value="5">5개 조</option>
+                    <option value="6">6개 조</option>
+                    <option value="7">7개 조</option>
+                    <option value="8">8개 조</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="ios-header" style="padding-bottom:5px;">
+            <span style="font-size:13px; color:var(--ios-gray); font-weight:600; text-transform:uppercase; margin-left:16px;">STUDENTS LIST</span>
+        </div>
+
+        <div id="student-list-container">
             </div>
 
-            <div id="resultBoard" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                </div>
+        <div class="bottom-action">
+            <button class="ios-btn" onclick="assignSeats()">
+                자리 섞기
+            </button>
         </div>
     </div>
 
-    <script>
-        // 초기 샘플 데이터
-        const SAMPLE_DATA = `김철수,m,80,
-이영희,f,90,박지성
-박지성,m,40,이영희
-최유리,f,75,
-정민수,m,60,
-강하늘,m,85,
-오지수,f,55,
-임재범,m,30,
-서현진,f,95,
-홍길동,m,70,
-전우치,m,65,
-배수지,f,88,
-송중기,m,92,
-박보영,f,78,
-이광수,m,45,김종국
-김종국,m,98,이광수
-유재석,m,85,
-송지효,f,82,
-하동훈,m,60,
-양세찬,m,50,`;
+    <div id="classroom">
+        <div id="blackboard">칠 판</div>
+    </div>
 
-        // 페이지 로드 시 예시 데이터 로드
-        window.onload = () => {
-            loadSampleData();
+    <script>
+        /* --- Logic --- */
+        
+        let GRID_GAP_X = 130; 
+        let GRID_GAP_Y = 90;  
+        let GRID_START_X = 0; 
+        let GRID_START_Y = 120; 
+
+        // 랜덤 이름 (예시)
+        const lastNames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임', '한', '오'];
+        const firstNames = ['민준', '서준', '도윤', '예준', '시우', '하준', '지호', '주원', '지우', '서현', '서연', '지유'];
+
+        function getRandomName() {
+            return lastNames[Math.floor(Math.random() * lastNames.length)] + 
+                   firstNames[Math.floor(Math.random() * firstNames.length)];
+        }
+
+        window.onload = function() {
+            // 학생 수 옵션 (1~40)
+            const select = document.getElementById('student-count');
+            for(let i=1; i<=40; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.text = i + "명";
+                if(i === 12) option.selected = true; 
+                select.appendChild(option);
+            }
+            initClass();
         };
 
-        function loadSampleData() {
-            document.getElementById('studentData').value = SAMPLE_DATA;
-        }
-        function clearData() {
-            document.getElementById('studentData').value = '';
-        }
-        function updateLabel(id, val) {
-            document.getElementById(id).innerText = val + "%";
-        }
-
-        // --- 핵심 로직 시작 ---
-
-        // 1. 데이터 파싱
-        function parseInput() {
-            const raw = document.getElementById('studentData').value.trim();
-            const lines = raw.split('\n');
-            let students = [];
+        // 교실 초기화 및 입력창 생성
+        function initClass() {
+            const count = parseInt(document.getElementById('student-count').value);
+            const listContainer = document.getElementById('student-list-container');
+            const classroom = document.getElementById('classroom');
             
-            lines.forEach((line, index) => {
-                const parts = line.split(',');
-                if(parts.length >= 2) {
-                    students.push({
-                        id: index,
-                        name: parts[0].trim(),
-                        gender: parts[1].trim().toLowerCase(), // m or f
-                        score: parseInt(parts[2] || 0), // 학습 수준
-                        avoid: parts[3] ? parts[3].trim() : null // 기피 대상 이름
-                    });
+            // 1. 기존 리스트 저장 (이름 유지용)
+            const existingInputs = document.querySelectorAll('.student-input');
+            let currentNames = [];
+            existingInputs.forEach(input => currentNames.push(input.value));
+
+            // 리셋
+            listContainer.innerHTML = '';
+            document.querySelectorAll('.desk').forEach(d => d.remove());
+
+            // 2. 입력창 생성 (번호순)
+            for (let i = 1; i <= count; i++) {
+                const row = document.createElement('div');
+                row.className = 'student-row';
+                
+                // 번호 배지
+                const numBadge = document.createElement('div');
+                numBadge.className = 'student-number';
+                numBadge.textContent = i;
+                
+                // 이름 입력
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.className = 'student-input';
+                nameInput.placeholder = '이름 입력';
+                // 기존 입력값이 있으면 유지, 없으면 랜덤 (또는 빈칸)
+                if (i <= currentNames.length && currentNames[i-1]) {
+                    nameInput.value = currentNames[i-1];
+                } else {
+                    nameInput.value = getRandomName(); // 테스트용 랜덤, 실사용시 "" 권장
                 }
-            });
-            return students;
+
+                // 성적(상중하) 토글 - 간단한 클릭형
+                const levelBadge = document.createElement('div');
+                levelBadge.className = 'level-badge';
+                levelBadge.textContent = '중'; // 기본값
+                levelBadge.dataset.val = 'mid';
+                levelBadge.onclick = function() {
+                    if(this.dataset.val === 'mid') { this.textContent = '상'; this.dataset.val = 'high'; this.style.color = '#FF3B30'; }
+                    else if(this.dataset.val === 'high') { this.textContent = '하'; this.dataset.val = 'low'; this.style.color = '#007AFF'; }
+                    else { this.textContent = '중'; this.dataset.val = 'mid'; this.style.color = '#8E8E93'; }
+                };
+
+                row.appendChild(numBadge);
+                row.appendChild(nameInput);
+                row.appendChild(levelBadge);
+                listContainer.appendChild(row);
+            }
+
+            // 3. 책상 생성 (초기 상태)
+            createDesks(count);
         }
 
-        // 2. AI 편성 실행 (Heuristic Optimization)
-        function runAI() {
-            const students = parseInput();
-            const groupCount = parseInt(document.getElementById('groupCount').value);
+        function createDesks(count) {
+            const classroom = document.getElementById('classroom');
+            const cols = 4; // 4열 배치 기본
+            const classroomWidth = classroom.clientWidth;
+            const totalWidth = (cols - 1) * GRID_GAP_X + 110; 
+            GRID_START_X = (classroomWidth - totalWidth) / 2;
+            if(GRID_START_X < 20) GRID_START_X = 20;
+
+            for (let i = 0; i < count; i++) {
+                const desk = document.createElement('div');
+                desk.className = 'desk';
+                desk.id = 'desk-' + i;
+                
+                const colIndex = i % cols; 
+                const rowIndex = Math.floor(i / cols);
+
+                const x = GRID_START_X + (colIndex * GRID_GAP_X);
+                const y = GRID_START_Y + (rowIndex * GRID_GAP_Y);
+
+                desk.style.left = x + 'px';
+                desk.style.top = y + 'px';
+                desk.innerHTML = `<span class="name">자리 ${i + 1}</span>`;
+                
+                classroom.appendChild(desk);
+                makeDraggable(desk);
+            }
+        }
+
+        // 자리 배치 알고리즘
+        function assignSeats() {
+            const inputs = document.querySelectorAll('.student-input');
+            const levels = document.querySelectorAll('.level-badge');
+            const groupCount = parseInt(document.getElementById('group-count').value);
             
-            // 가중치 가져오기
-            const wGender = parseInt(document.getElementById('weightGender').value);
-            const wLevel = parseInt(document.getElementById('weightLevel').value);
-            const wAvoid = parseInt(document.getElementById('weightAvoid').value);
-
-            let bestGroups = [];
-            let bestScore = Infinity; // 점수가 낮을수록(패널티가 적을수록) 좋은 배치
-
-            // *핵심* 시뮬레이션 반복 횟수 (많을수록 좋은 결과를 찾을 확률 up)
-            // 웹페이지 멈춤 방지를 위해 1000번만 돌립니다.
-            const ITERATIONS = 1000; 
-
-            for(let i=0; i<ITERATIONS; i++) {
-                // 2-1. 무작위 셔플
-                const shuffled = [...students].sort(() => Math.random() - 0.5);
-                const currentGroups = Array.from({length: groupCount}, () => []);
-
-                // 2-2. 순서대로 배분
-                shuffled.forEach((stu, idx) => {
-                    currentGroups[idx % groupCount].push(stu);
+            let students = [];
+            inputs.forEach((input, idx) => {
+                let name = input.value.trim() || "(공석)";
+                students.push({ 
+                    name: name, 
+                    level: levels[idx].dataset.val 
                 });
+            });
 
-                // 2-3. 배치 점수 계산 (Penalty 방식)
-                let currentScore = 0;
+            // 셔플 (Fisher-Yates)
+            for (let i = students.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [students[i], students[j]] = [students[j], students[i]];
+            }
 
-                currentGroups.forEach(group => {
-                    // (1) 성별 불균형 계산
-                    const boys = group.filter(s => s.gender === 'm').length;
-                    const girls = group.filter(s => s.gender === 'f').length;
-                    // 남녀 차이가 클수록 패널티
-                    currentScore += Math.abs(boys - girls) * wGender;
-
-                    // (2) 학습 수준(점수) 합계의 분산 최소화
-                    // (이건 전체 그룹 간 비교가 필요해서 루프 밖에서 처리하거나, 
-                    // 간단히 그룹 내 평균과의 거리를 계산하는 방식 등 다양함. 여기선 간단히 그룹 총점 체크)
-                    // *복잡도를 줄이기 위해 생략하고 여기선 '기피 친구'에 집중합니다.*
-                    
-                    // (3) 기피 친구 체크
-                    group.forEach(s => {
-                        if(s.avoid) {
-                            // 기피하는 친구가 같은 그룹에 있는지 확인
-                            const enemy = group.find(mate => mate.name === s.avoid);
-                            if(enemy) currentScore += (500 * (wAvoid/10)); // 엄청난 패널티 부여
-                        }
-                    });
-                });
-
-                // (2) 학습 수준 분산 계산 (전체 루프 한번 더)
-                // 그룹별 평균 점수들이 서로 비슷해야 함 -> 표준편차가 작아야 함
-                const groupAvgs = currentGroups.map(g => g.reduce((a,b)=>a+b.score, 0) / (g.length || 1));
-                const totalAvg = groupAvgs.reduce((a,b)=>a+b, 0) / groupCount;
-                const variance = groupAvgs.reduce((a,b) => a + Math.pow(b - totalAvg, 2), 0);
-                currentScore += variance * wLevel;
-
-                // 최적해 갱신
-                if(currentScore < bestScore) {
-                    bestScore = currentScore;
-                    bestGroups = JSON.parse(JSON.stringify(currentGroups)); // 깊은 복사
+            const desks = document.querySelectorAll('.desk');
+            
+            // 모둠 할당 로직 (단순 균등 분배)
+            let groupAssignments = [];
+            if (groupCount > 0) {
+                // 학생 수만큼 1~GroupCount 반복
+                for(let i=0; i<students.length; i++) {
+                    groupAssignments.push((i % groupCount) + 1);
+                }
+                // 모둠 번호도 섞어줌 (자리 배치와 별개로 모둠 구성을 섞음)
+                 for (let i = groupAssignments.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [groupAssignments[i], groupAssignments[j]] = [groupAssignments[j], groupAssignments[i]];
                 }
             }
 
-            // 결과 렌더링
-            renderGroups(bestGroups);
-            updateStats("AI 배정 완료 (최적화 점수: " + Math.floor(bestScore) + ")");
-        }
+            // 애니메이션 효과
+            desks.forEach(desk => {
+                desk.style.transform = 'scale(0.8)';
+                desk.style.opacity = '0.5';
+            });
 
-        // 3. 화면 그리기 (SortableJS 연동)
-        function renderGroups(groups) {
-            const board = document.getElementById('resultBoard');
-            board.innerHTML = '';
+            setTimeout(() => {
+                desks.forEach((desk, index) => {
+                    if (index < students.length) {
+                        desk.style.transform = 'scale(1)';
+                        desk.style.opacity = '1';
+                        
+                        // 내용 업데이트
+                        let html = `<span class="name">${students[index].name}</span>`;
+                        
+                        // 기존 클래스 제거 (group-1, group-2 ...)
+                        desk.className = 'desk'; 
+                        
+                        // 모둠 설정이 되어있다면
+                        if (groupCount > 0) {
+                            let gNum = groupAssignments[index];
+                            html += `<span class="group-label">${gNum}모둠</span>`;
+                            desk.classList.add(`group-${gNum}`); // 색상 적용 클래스
+                        }
 
-            groups.forEach((group, idx) => {
-                // 모둠 카드 생성
-                const col = document.createElement('div');
-                col.className = 'bg-white rounded-lg shadow border border-gray-200 flex flex-col h-full';
-                
-                // 헤더
-                const header = document.createElement('div');
-                header.className = 'p-3 border-b border-gray-100 bg-gray-50 rounded-t-lg flex justify-between items-center';
-                header.innerHTML = `<span class="font-bold text-gray-700">${idx+1}모둠</span> <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-600 count-badge">${group.length}명</span>`;
-                col.appendChild(header);
-
-                // 학생 리스트 컨테이너
-                const list = document.createElement('div');
-                list.className = 'p-3 space-y-2 flex-grow group-container';
-                list.setAttribute('data-group-id', idx);
-
-                // 학생 카드 생성
-                let totalScore = 0;
-                group.forEach(stu => {
-                    const el = createStudentElement(stu);
-                    list.appendChild(el);
-                    totalScore += stu.score;
-                });
-
-                // 모둠 정보(평균점수 등) 표시
-                const footer = document.createElement('div');
-                footer.className = 'p-2 text-xs text-center text-gray-400 border-t border-gray-100 mt-auto';
-                const avg = group.length ? (totalScore/group.length).toFixed(1) : 0;
-                footer.innerText = `평균 레벨: ${avg}`;
-                
-                col.appendChild(list);
-                col.appendChild(footer);
-                board.appendChild(col);
-
-                // ** SortableJS 적용 (핵심) **
-                new Sortable(list, {
-                    group: 'shared', // 이 그룹 이름이 같으면 서로 이동 가능
-                    animation: 150,
-                    ghostClass: 'bg-indigo-100',
-                    onEnd: function (evt) {
-                        // 드래그가 끝나면 통계 다시 계산
-                        recalcStats();
+                        desk.innerHTML = html;
                     }
                 });
-            });
+            }, 200);
         }
 
-        function createStudentElement(stu) {
-            const div = document.createElement('div');
-            // 성별에 따른 클래스 부여
-            const genderClass = stu.gender === 'm' ? 'gender-m' : 'gender-f';
-            div.className = `student-card p-2 rounded shadow-sm text-sm flex justify-between items-center bg-white border border-gray-100 ${genderClass}`;
-            div.innerHTML = `
-                <div>
-                    <span class="font-medium text-gray-800">${stu.name}</span>
-                    <span class="text-xs text-gray-400 ml-1">(${stu.score})</span>
-                </div>
-                ${stu.avoid ? `<i class="fas fa-exclamation-circle text-red-400 text-xs" title="${stu.avoid} 기피"></i>` : ''}
-            `;
-            // 데이터 속성 저장 (나중에 계산용)
-            div.dataset.score = stu.score;
-            div.dataset.gender = stu.gender;
-            return div;
-        }
+        /* --- Drag & Drop (Snap to Grid) --- */
+        function makeDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown;
 
-        function updateStats(msg) {
-            document.getElementById('stats').innerText = msg;
-        }
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.classList.remove('snapping');
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
 
-        // 드래그 후 재계산 로직
-        function recalcStats() {
-            // 여기서는 간단히 UI 상의 변화만 보여주지만, 
-            // 실제로는 DOM에서 데이터를 다시 읽어서 평균 점수 등을 갱신해주는 로직을 넣으면 좋습니다.
-            // (구현 복잡도를 위해 이번 코드에서는 생략하지만, 
-            //  모둠 평균 점수 텍스트를 업데이트하는 코드를 추가하면 완벽합니다.)
-             updateStats("사용자가 수동으로 수정함");
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                
+                // Snap Logic
+                let colIndex = Math.round((elmnt.offsetLeft - GRID_START_X) / GRID_GAP_X);
+                let rowIndex = Math.round((elmnt.offsetTop - GRID_START_Y) / GRID_GAP_Y);
+                
+                let newLeft = GRID_START_X + (colIndex * GRID_GAP_X);
+                let newTop = GRID_START_Y + (rowIndex * GRID_GAP_Y);
+                if(newTop < 80) newTop = 80; // 칠판 침범 방지
+
+                elmnt.classList.add('snapping');
+                elmnt.style.left = newLeft + "px";
+                elmnt.style.top = newTop + "px";
+            }
         }
+        
+        // 리사이즈 대응
+        window.addEventListener('resize', () => {
+             const count = parseInt(document.getElementById('student-count').value);
+             // 위치만 재조정하지 않고 간단히 desks를 다시 그리지 않음 (드래그 위치 유지 위해)
+             // 다만 화면이 너무 바뀌면 GRID_START_X 재계산 필요
+             const classroom = document.getElementById('classroom');
+             const cols = 4;
+             const totalWidth = (cols - 1) * GRID_GAP_X + 110; 
+             GRID_START_X = (classroom.clientWidth - totalWidth) / 2;
+             if(GRID_START_X < 20) GRID_START_X = 20;
+        });
 
     </script>
 </body>
