@@ -2,430 +2,491 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 몬스터 연구소 👾</title>
-    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <title>AI 명탐정: 군중 속의 범인 찾기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6C5CE7;
-            --secondary: #00CEC9;
-            --accent: #FAB1A0;
-            --bg: #dfe6e9;
-            --card-bg: #ffffff;
+            --bg-dark: #2c3e50;
+            --panel-light: #ecf0f1;
+            --highlight: #f1c40f;
+            --criminal: #e74c3c;
+            --citizen: #27ae60;
+            --ui-blue: #3498db;
         }
 
         body {
-            font-family: 'Jua', sans-serif;
-            background-color: var(--bg);
+            font-family: 'Do Hyeon', sans-serif;
+            background-color: var(--bg-dark);
+            color: #333;
             margin: 0;
-            padding: 20px;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            height: 100vh;
             overflow: hidden;
-            user-select: none;
         }
 
-        /* 상단 네비게이션 탭 */
-        .nav-tabs {
+        /* --- 상단 헤더 --- */
+        header {
+            background: #34495e;
+            color: white;
+            padding: 10px 20px;
             display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             z-index: 10;
         }
+        h1 { margin: 0; font-family: 'Black Han Sans', sans-serif; font-size: 1.8rem; letter-spacing: 2px; }
+        .stats { font-size: 1.2rem; }
+        .stats span { color: var(--highlight); margin-left: 5px; }
 
-        .tab-btn {
-            background: #b2bec3;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.5rem;
-            border-radius: 15px;
-            cursor: pointer;
-            color: white;
-            font-family: 'Jua';
-            transition: all 0.3s;
-            box-shadow: 0 5px 0 #636e72;
-        }
-
-        .tab-btn.active {
-            background: var(--primary);
-            transform: translateY(5px);
-            box-shadow: none;
-        }
-
-        /* 메인 게임 화면 */
-        .game-screen {
-            background: var(--card-bg);
-            width: 90%;
-            max-width: 800px;
-            height: 600px;
-            border-radius: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
+        /* --- 메인 레이아웃 (좌우 분할) --- */
+        #game-area {
+            display: flex;
+            flex: 1;
             overflow: hidden;
-            display: none; /* JS로 제어 */
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
         }
 
-        .game-screen.active {
+        /* 왼쪽: 학습실 (Interrogation Room) */
+        #training-zone {
+            width: 320px;
+            background: #bdc3c7;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-around;
-            animation: fadeIn 0.5s;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+            z-index: 5;
         }
 
-        h2 { font-size: 2rem; color: #2d3436; margin: 0; }
-        p { font-size: 1.2rem; color: #636e72; }
-
-        /* --- STAGE 1: 데이터 수집 --- */
-        .data-collection-area {
+        /* 용의자 카드 (SVG 아바타) */
+        .suspect-card {
+            width: 220px;
+            height: 250px;
+            background: white;
+            border: 5px solid #7f8c8d;
+            border-radius: 15px;
+            margin-bottom: 20px;
             display: flex;
-            gap: 20px;
-            width: 100%;
             justify-content: center;
-        }
-
-        .monster-card {
-            border: 4px dashed #bdc3c7;
-            border-radius: 20px;
-            padding: 20px;
-            width: 200px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .monster-card:active { transform: scale(0.95); background: #f1f2f6; }
-        
-        .monster-emoji { font-size: 80px; }
-        .data-count { font-size: 1.5rem; color: var(--primary); font-weight: bold; }
-
-        /* --- STAGE 2: 훈련 (그래프) --- */
-        .training-visual {
-            width: 80%;
-            height: 200px;
-            background: #2d3436;
-            border-radius: 10px;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             position: relative;
-            display: flex;
-            align-items: flex-end;
-            padding: 10px;
-            gap: 5px;
-            overflow: hidden;
         }
+        .suspect-card svg { width: 180px; height: 180px; }
 
-        .loss-bar {
+        /* 조작 버튼 */
+        .btn-group { width: 100%; display: flex; gap: 10px; margin-bottom: 10px; }
+        button {
             flex: 1;
-            background: var(--accent);
-            border-radius: 5px 5px 0 0;
-            transition: height 0.5s;
-        }
-        
-        .brain-container { font-size: 100px; margin: 20px; animation: float 3s infinite ease-in-out; }
-        
-        #train-btn {
-            background: var(--secondary);
-            font-size: 2rem;
-            padding: 20px 60px;
-            border-radius: 50px;
+            padding: 15px;
             border: none;
-            color: white;
+            border-radius: 10px;
+            font-family: 'Do Hyeon', sans-serif;
+            font-size: 1.2rem;
             cursor: pointer;
-            box-shadow: 0 8px 0 #00b894;
-            font-family: 'Jua';
+            transition: transform 0.1s, opacity 0.2s;
+            color: white;
         }
-        #train-btn:active { transform: translateY(8px); box-shadow: none; }
-        #train-btn:disabled { background: #b2bec3; box-shadow: none; cursor: not-allowed; }
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* --- STAGE 3: 실전 테스트 --- */
-        .test-zone {
-            display: flex;
-            align-items: center;
-            gap: 50px;
+        .btn-thief { background: var(--criminal); box-shadow: 0 4px 0 #c0392b; }
+        .btn-citizen { background: var(--citizen); box-shadow: 0 4px 0 #219150; }
+        .btn-arrest { 
+            background: var(--ui-blue); 
+            box-shadow: 0 4px 0 #2980b9; 
+            width: 100%; margin-top: 20px; font-size: 1.5rem;
         }
-        .unknown-monster {
-            font-size: 120px;
-            background: #eee;
+        .btn-reset { background: #95a5a6; margin-top: auto; font-size: 1rem; padding: 10px; }
+
+        /* AI 생각 로그 */
+        .ai-log {
+            width: 100%;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            border: 2px solid #34495e;
+        }
+        .log-item { margin-bottom: 5px; border-bottom: 1px dashed #555; padding-bottom: 2px; }
+        .feature-high { color: var(--criminal); font-weight: bold; }
+        .feature-low { color: var(--citizen); }
+
+        /* 오른쪽: 도시 광장 (Crowd) */
+        #city-square {
+            flex: 1;
+            background: #ecf0f1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        /* 군중 속 미니 아바타 */
+        .mini-person {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid #bdc3c7;
             border-radius: 50%;
-            width: 200px;
-            height: 200px;
+            cursor: pointer;
+            transition: all 0.3s;
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 5px solid #bdc3c7;
-        }
-        .ai-thinking {
-            font-size: 1.5rem;
-            background: #fff;
-            border: 3px solid var(--primary);
-            padding: 20px;
-            border-radius: 20px;
             position: relative;
-            min-width: 200px;
         }
-        /* 말풍선 꼬리 */
-        .ai-thinking::after {
-            content: ''; position: absolute; left: -20px; top: 50%;
-            border-width: 10px; border-style: solid;
-            border-color: transparent var(--primary) transparent transparent;
+        .mini-person svg { width: 30px; height: 30px; }
+        .mini-person:hover { transform: scale(1.5); z-index: 100; border-color: var(--ui-blue); }
+
+        /* 체포된 상태 */
+        .mini-person.arrested {
+            background-color: var(--criminal);
+            border-color: #c0392b;
+            transform: scale(1.1);
+            animation: shake 0.5s;
+        }
+        .mini-person.arrested::after {
+            content: "🔒";
+            position: absolute;
+            font-size: 20px;
+            top: -10px; right: -10px;
+            z-index: 101;
+        }
+        /* 무고한 시민 체포 (오판) 시각적 효과 - 나중에 확인용 */
+        .mini-person.wrong-arrest {
+            box-shadow: 0 0 10px red;
         }
 
-        /* 애니메이션 */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .pulse { animation: pulse 0.2s; }
-
-        /* 결과 모달 */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100;
-        }
-        .hidden { display: none !important; }
-        .modal-content {
-            background: white; padding: 40px; border-radius: 20px; text-align: center;
-            box-shadow: 0 0 30px rgba(255,255,255,0.5);
-            animation: fadeIn 0.3s;
-        }
-        .modal-btn {
-            background: var(--primary); color: white; border: none; padding: 10px 20px;
-            font-size: 1.2rem; border-radius: 10px; cursor: pointer; font-family: 'Jua'; margin-top: 20px;
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
 
+        /* 팁 모달 */
+        .tooltip {
+            position: absolute; bottom: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 15px; border-radius: 10px; font-size: 1rem;
+            max-width: 300px; line-height: 1.4;
+            pointer-events: none;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
 
-    <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab(1)">1. 데이터 수집 📸</button>
-        <button class="tab-btn" onclick="switchTab(2)">2. AI 뇌 훈련 🧠</button>
-        <button class="tab-btn" onclick="switchTab(3)">3. 실전 테스트 🎮</button>
-    </div>
-
-    <div id="stage-1" class="game-screen active">
-        <h2>STEP 1: 몬스터 사진을 모아주세요!</h2>
-        <p>AI는 아직 아는 게 없어요. 카드를 클릭해서 데이터를 "냠냠" 먹여주세요.</p>
-        
-        <div class="data-collection-area">
-            <div class="monster-card" onclick="collectData('slime')">
-                <div class="monster-emoji">🦠</div>
-                <h3>슬라임</h3>
-                <div class="data-count">수집: <span id="count-slime">0</span>장</div>
-            </div>
-            <div class="monster-card" onclick="collectData('ghost')">
-                <div class="monster-emoji">👻</div>
-                <h3>유령</h3>
-                <div class="data-count">수집: <span id="count-ghost">0</span>장</div>
-            </div>
-            <div class="monster-card" onclick="collectData('alien')">
-                <div class="monster-emoji">👾</div>
-                <h3>외계인</h3>
-                <div class="data-count">수집: <span id="count-alien">0</span>장</div>
-            </div>
-        </div>
-        <p style="color: var(--primary); font-size: 1rem;">* 데이터가 많을수록 나중에 AI가 더 똑똑해집니다! (최소 10장씩 모으세요)</p>
-    </div>
-
-    <div id="stage-2" class="game-screen">
-        <h2>STEP 2: 오차(Loss)를 줄여라!</h2>
-        <p>버튼을 연타해서 AI의 뇌를 훈련시키세요! 그래프가 바닥으로 내려가야 합니다.</p>
-        
-        <div class="brain-container" id="brain">🧠</div>
-        
-        <div class="training-visual" id="loss-chart">
-            </div>
-        
-        <div style="margin-top: 20px;">
-            <p>현재 오차율: <span id="loss-value" style="color:red; font-size:1.5rem;">100</span>%</p>
-            <p>현재 지능(Epoch): <span id="epoch-value">0</span> 세대</p>
-        </div>
-
-        <button id="train-btn" onclick="trainAI()">⚡ 훈련하기 (클릭!)</button>
-    </div>
-
-    <div id="stage-3" class="game-screen">
-        <h2>STEP 3: 몬스터 정체 밝히기</h2>
-        <p>훈련된 AI가 몬스터를 보고 정체를 추측합니다.</p>
-        
-        <div class="test-zone">
-            <div class="unknown-monster" id="test-monster">❓</div>
-            <div class="ai-thinking">
-                <p id="ai-status">음... 분석 중...</p>
-                <h1 id="ai-guess" style="color:var(--primary)">?</h1>
-                <p id="ai-confidence" style="font-size:0.8rem; color:#b2bec3;">확신: 0%</p>
-            </div>
-        </div>
-
-        <button class="tab-btn" style="background:#00b894; margin-top:30px;" onclick="runTest()">새로운 몬스터 등장!</button>
-    </div>
-
-    <div id="alert-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2 id="modal-msg">메시지</h2>
-            <button class="modal-btn" onclick="closeModal()">확인</button>
+<header>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:2rem;">🕵️‍♀️</span>
+        <div>
+            <h1>AI 명탐정</h1>
+            <span style="font-size:0.8rem; opacity:0.8;">빅데이터 분석실</span>
         </div>
     </div>
+    <div class="stats">
+        총 인구: <span id="total-pop">500</span>명 | 
+        학습 횟수: <span id="train-count">0</span>회 | 
+        체포된 사람: <span id="arrest-count">0</span>명
+    </div>
+</header>
 
-    <script>
-        // --- 게임 상태 변수 ---
-        let collectedData = { slime: 0, ghost: 0, alien: 0 };
-        let totalData = 0;
-        let currentLoss = 100; // 오차율 (0이 되면 완벽)
-        let epoch = 0; // 훈련 횟수
-        let isTrained = false;
+<div id="game-area">
+    <div id="training-zone">
+        <h2 style="margin-top:0;">1. 범인 학습시키기</h2>
+        <p style="font-size:0.9rem; text-align:center; margin-bottom:10px;">
+            이 사람을 보고 판단해주세요.<br>
+            <span style="color:#7f8c8d;">(선생님이 정한 범인의 특징은?)</span>
+        </p>
 
-        // --- 탭 전환 로직 ---
-        function switchTab(tabNum) {
-            // 모든 화면 숨기기
-            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            // 선택된 화면 보이기
-            document.getElementById(`stage-${tabNum}`).classList.add('active');
-            document.querySelectorAll('.tab-btn')[tabNum-1].classList.add('active');
+        <div class="suspect-card" id="current-suspect-view">
+            </div>
 
-            if (tabNum === 2) initTrainingChart();
+        <div class="btn-group">
+            <button class="btn-thief" onclick="teachAI('thief')">범인이다! 😡</button>
+            <button class="btn-citizen" onclick="teachAI('citizen')">시민이다 😇</button>
+        </div>
+
+        <div class="ai-log" id="ai-brain-log">
+            <div style="text-align:center; color:#bdc3c7;">아직 학습 데이터가 없습니다.</div>
+        </div>
+
+        <button class="btn-arrest" onclick="arrestPhase()">🚨 전원 체포 시작!</button>
+        <button class="btn-reset" onclick="resetGame()">🔄 게임 초기화</button>
+    </div>
+
+    <div id="city-square">
+        </div>
+    
+    <div class="tooltip">
+        💡 <b>팁:</b> "파란 셔츠" 입은 사람만 계속 범인으로 지목해보세요. 
+        AI가 나중에 파란 옷 입은 사람은 무조건 잡아들이는 <b>'편향(Bias)'</b>을 볼 수 있습니다.
+    </div>
+</div>
+
+<script>
+    /* --- 1. 설정 및 데이터 --- */
+    const TOTAL_PEOPLE = 500;
+    const FEATURES = {
+        skinColor: ['#f1c27d', '#e0ac69', '#8d5524', '#ffdbac'],
+        shirtColor: ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#34495e', '#ecf0f1'],
+        hairColor: ['#2c3e50', '#8e44ad', '#e67e22', '#f1c40f', '#ecf0f1'],
+        hat: [true, false],
+        glasses: [true, false],
+        mask: [true, false],
+        beard: [true, false],
+        mustache: [true, false],
+        tie: [true, false],
+        scar: [true, false],
+        hairStyle: ['short', 'long', 'bald', 'spiky']
+    };
+
+    let people = []; // 500명 데이터
+    let currentSuspect = null; // 현재 학습 중인 사람
+    let weights = {}; // AI의 학습 가중치 (Feature Weights)
+    let trainCount = 0;
+
+    /* --- 2. 초기화 및 생성 로직 --- */
+    function initGame() {
+        people = [];
+        weights = {};
+        trainCount = 0;
+        document.getElementById('city-square').innerHTML = '';
+        document.getElementById('ai-brain-log').innerHTML = '<div style="text-align:center; color:#bdc3c7;">아직 학습 데이터가 없습니다.</div>';
+        updateStats();
+
+        // 500명 생성
+        for (let i = 0; i < TOTAL_PEOPLE; i++) {
+            people.push(generateRandomPerson(i));
         }
 
-        // --- STAGE 1: 데이터 수집 ---
-        function collectData(type) {
-            collectedData[type]++;
-            totalData++;
-            document.getElementById(`count-${type}`).innerText = collectedData[type];
-            
-            // 클릭 효과
-            const card = document.activeElement; // 클릭된 요소
-            // 애니메이션은 CSS active로 처리됨
+        // 화면에 렌더링 (Batch 처리로 성능 최적화)
+        const fragment = document.createDocumentFragment();
+        people.forEach(p => {
+            const el = document.createElement('div');
+            el.className = 'mini-person';
+            el.id = `person-${p.id}`;
+            el.innerHTML = getAvatarSVG(p);
+            el.onclick = () => { showSuspectInPanel(p); }; // 클릭하면 학습 패널로 이동
+            fragment.appendChild(el);
+        });
+        document.getElementById('city-square').appendChild(fragment);
+
+        // 첫 번째 학습 대상 선정
+        pickNewSuspect();
+    }
+
+    function generateRandomPerson(id) {
+        // 랜덤 속성 부여
+        return {
+            id: id,
+            skinColor: randomPick(FEATURES.skinColor),
+            shirtColor: randomPick(FEATURES.shirtColor),
+            hairColor: randomPick(FEATURES.hairColor),
+            hat: Math.random() < 0.3, // 30% 확률
+            glasses: Math.random() < 0.3,
+            mask: Math.random() < 0.2,
+            beard: Math.random() < 0.2,
+            mustache: Math.random() < 0.2,
+            tie: Math.random() < 0.3,
+            scar: Math.random() < 0.1,
+            hairStyle: randomPick(FEATURES.hairStyle)
+        };
+    }
+
+    function randomPick(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    /* --- 3. SVG 아바타 생성기 (핵심 시각화) --- */
+    function getAvatarSVG(p) {
+        // 얼굴
+        let svg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`;
+        
+        // 몸통 (셔츠)
+        svg += `<rect x="20" y="70" width="60" height="30" rx="10" fill="${p.shirtColor}" />`;
+        if(p.tie) svg += `<path d="M50 70 L50 90 L45 95 L50 100 L55 95 L50 90" fill="#333" stroke="white" stroke-width="1"/>`;
+
+        // 머리 (피부)
+        svg += `<circle cx="50" cy="50" r="25" fill="${p.skinColor}" />`;
+
+        // 흉터
+        if(p.scar) svg += `<path d="M40 45 L45 55" stroke="#a94442" stroke-width="2" />`;
+
+        // 머리카락
+        if(p.hairStyle !== 'bald' && !p.hat) {
+            if(p.hairStyle === 'short') svg += `<path d="M25 50 Q50 20 75 50" fill="${p.hairColor}" />`;
+            if(p.hairStyle === 'long') svg += `<path d="M25 50 Q50 10 75 50 L75 80 L25 80 Z" fill="${p.hairColor}" />`;
+            if(p.hairStyle === 'spiky') svg += `<path d="M25 50 L35 30 L45 50 L50 25 L55 50 L65 30 L75 50 Z" fill="${p.hairColor}" />`;
         }
 
-        // --- STAGE 2: 훈련 (핵심 로직) ---
-        function initTrainingChart() {
-            const chart = document.getElementById('loss-chart');
-            chart.innerHTML = '';
-            // 초기 빨간 막대들 생성
-            for(let i=0; i<20; i++) {
-                let bar = document.createElement('div');
-                bar.className = 'loss-bar';
-                bar.style.height = (Math.random() * 50 + 50) + '%'; // 들쑥날쑥한 오차
-                chart.appendChild(bar);
+        // 눈
+        svg += `<circle cx="40" cy="50" r="3" fill="black" />`;
+        svg += `<circle cx="60" cy="50" r="3" fill="black" />`;
+
+        // 수염
+        if(p.beard) svg += `<path d="M30 60 Q50 80 70 60" fill="none" stroke="${p.hairColor}" stroke-width="3" />`;
+        if(p.mustache) svg += `<rect x="35" y="55" width="30" height="3" rx="1" fill="${p.hairColor}" />`;
+
+        // 안경
+        if(p.glasses) {
+            svg += `<circle cx="40" cy="50" r="8" fill="none" stroke="black" stroke-width="2" />`;
+            svg += `<circle cx="60" cy="50" r="8" fill="none" stroke="black" stroke-width="2" />`;
+            svg += `<line x1="48" y1="50" x2="52" y2="50" stroke="black" stroke-width="2" />`;
+        }
+
+        // 마스크
+        if(p.mask) svg += `<rect x="30" y="55" width="40" height="20" rx="5" fill="white" stroke="#ccc" />`;
+
+        // 모자 (가장 위에 그려야 함)
+        if(p.hat) {
+            svg += `<rect x="20" y="35" width="60" height="10" fill="#333" />`;
+            svg += `<rect x="30" y="15" width="40" height="20" fill="#333" />`;
+        }
+
+        svg += `</svg>`;
+        return svg;
+    }
+
+    /* --- 4. 학습 로직 (AI Brain) --- */
+    function pickNewSuspect() {
+        // 군중 중에서 랜덤하게 한 명을 데려옴
+        currentSuspect = people[Math.floor(Math.random() * TOTAL_PEOPLE)];
+        showSuspectInPanel(currentSuspect);
+    }
+
+    function showSuspectInPanel(p) {
+        currentSuspect = p;
+        const view = document.getElementById('current-suspect-view');
+        view.innerHTML = getAvatarSVG(p);
+    }
+
+    function teachAI(label) {
+        trainCount++;
+        
+        // 가중치 업데이트 (지도 학습)
+        // 범인이면 특징 점수 +1, 시민이면 특징 점수 -1
+        const delta = (label === 'thief') ? 1 : -1;
+        
+        updateWeight('hat', currentSuspect.hat, delta);
+        updateWeight('glasses', currentSuspect.glasses, delta);
+        updateWeight('mask', currentSuspect.mask, delta);
+        updateWeight('beard', currentSuspect.beard, delta);
+        updateWeight('mustache', currentSuspect.mustache, delta);
+        updateWeight('tie', currentSuspect.tie, delta);
+        updateWeight('shirt_' + currentSuspect.shirtColor, true, delta); // 색상은 별도 처리
+
+        updateStats();
+        updateLog();
+        pickNewSuspect(); // 다음 사람 데려오기
+        
+        // 시각적 피드백
+        const view = document.getElementById('current-suspect-view');
+        view.style.transform = label === 'thief' ? 'rotate(10deg)' : 'rotate(-10deg)';
+        setTimeout(()=> view.style.transform = 'rotate(0deg)', 200);
+    }
+
+    function updateWeight(feature, isActive, delta) {
+        if (!isActive) return; // 특징이 없으면 학습 안함
+        if (!weights[feature]) weights[feature] = 0;
+        weights[feature] += delta;
+    }
+
+    function updateLog() {
+        // 가중치가 높은 순서대로 정렬해서 보여줌 (AI가 무엇을 범인의 특징으로 보는지)
+        const sorted = Object.entries(weights).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+        
+        let html = '';
+        sorted.forEach(([key, val]) => {
+            if(val === 0) return;
+            const style = val > 0 ? 'feature-high' : 'feature-low';
+            const text = translateFeature(key);
+            const score = val > 0 ? `+${val} (범인 특징)` : `${val} (시민 특징)`;
+            html += `<div class="log-item ${style}">${text}: ${score}</div>`;
+        });
+        
+        if(html === '') html = '<div style="text-align:center; color:#bdc3c7;">특징을 찾는 중...</div>';
+        document.getElementById('ai-brain-log').innerHTML = html;
+    }
+
+    function translateFeature(key) {
+        if(key === 'hat') return '🎩 모자';
+        if(key === 'glasses') return '👓 안경';
+        if(key === 'mask') return '😷 마스크';
+        if(key === 'beard') return '🧔 턱수염';
+        if(key === 'mustache') return '〰️ 콧수염';
+        if(key === 'tie') return '👔 넥타이';
+        if(key.includes('shirt')) return `👕 옷 색깔(${key.split('_')[1]})`;
+        return key;
+    }
+
+    /* --- 5. 실전 체포 (Inference) --- */
+    function arrestPhase() {
+        if(trainCount < 5) {
+            alert("데이터가 너무 부족합니다! 최소 5명은 학습시켜주세요.");
+            return;
+        }
+
+        let arrestCount = 0;
+        document.querySelectorAll('.mini-person').forEach(el => el.classList.remove('arrested'));
+
+        people.forEach(p => {
+            // 점수 계산 (Inference)
+            let score = 0;
+            if(p.hat) score += (weights['hat'] || 0);
+            if(p.glasses) score += (weights['glasses'] || 0);
+            if(p.mask) score += (weights['mask'] || 0);
+            if(p.beard) score += (weights['beard'] || 0);
+            if(p.mustache) score += (weights['mustache'] || 0);
+            if(p.tie) score += (weights['tie'] || 0);
+            score += (weights['shirt_' + p.shirtColor] || 0);
+
+            // 점수가 0보다 크면 범인으로 판단
+            if (score > 0) {
+                const el = document.getElementById(`person-${p.id}`);
+                setTimeout(() => {
+                    el.classList.add('arrested');
+                }, Math.random() * 1000); // 약간의 시차를 두고 체포 (연출)
+                arrestCount++;
             }
+        });
+
+        document.getElementById('arrest-count').innerText = arrestCount;
+        alert(`AI 분석 결과, 총 ${arrestCount}명을 용의자로 체포했습니다!`);
+    }
+
+    function resetGame() {
+        if(confirm("모든 학습 내용을 지우고 초기화하시겠습니까?")) {
+            initGame();
         }
+    }
 
-        function trainAI() {
-            // 1. 데이터가 너무 적으면 훈련 불가
-            if (totalData < 10) {
-                showModal("🚨 데이터 부족! 1단계에서 몬스터를 10마리 이상 모아오세요.");
-                return;
-            }
+    function updateStats() {
+        document.getElementById('train-count').innerText = trainCount;
+        document.getElementById('arrest-count').innerText = document.querySelectorAll('.arrested').length;
+    }
 
-            // 2. 훈련 진행 (오차율 감소)
-            const btn = document.getElementById('train-btn');
-            const brain = document.getElementById('brain');
-            const lossText = document.getElementById('loss-value');
-            const epochText = document.getElementById('epoch-value');
-            const chart = document.getElementById('loss-chart');
+    // 게임 시작
+    window.onload = initGame;
 
-            // 뇌가 두근거리는 효과
-            brain.classList.remove('pulse');
-            void brain.offsetWidth; // 리플로우 강제 (애니메이션 리셋용)
-            brain.classList.add('pulse');
-
-            epoch++;
-            epochText.innerText = epoch;
-
-            // 오차율 계산: 데이터가 많을수록 빨리 줄어듦
-            let learningRate = (totalData / 5); // 학습률
-            currentLoss -= learningRate + (Math.random() * 5); // 랜덤성 추가
-            if (currentLoss < 1) currentLoss = 1;
-
-            lossText.innerText = Math.floor(currentLoss);
-
-            // 그래프 시각화 (오른쪽으로 흐르며 줄어드는 막대 추가)
-            let newBar = document.createElement('div');
-            newBar.className = 'loss-bar';
-            newBar.style.height = currentLoss + '%';
-            newBar.style.background = currentLoss < 20 ? '#00b894' : '#FAB1A0'; // 오차가 줄면 초록색
-            
-            chart.appendChild(newBar);
-            if(chart.children.length > 30) chart.removeChild(chart.firstChild); // 오래된 막대 삭제
-
-            // 3. 훈련 완료 체크
-            if (currentLoss <= 10) {
-                isTrained = true;
-                showModal("🎉 훈련 완료! AI가 매우 똑똑해졌습니다. 3단계로 가보세요!");
-                btn.style.background = "#00b894";
-                btn.innerText = "훈련 완료 (최적화됨)";
-            }
-        }
-
-        // --- STAGE 3: 실전 테스트 ---
-        function runTest() {
-            const monsterEl = document.getElementById('test-monster');
-            const guessEl = document.getElementById('ai-guess');
-            const statusEl = document.getElementById('ai-status');
-            const confEl = document.getElementById('ai-confidence');
-
-            // 1. 랜덤 몬스터 등장
-            const types = ['slime', 'ghost', 'alien'];
-            const emojis = {'slime':'🦠', 'ghost':'👻', 'alien':'👾'};
-            const names = {'slime':'슬라임', 'ghost':'유령', 'alien':'외계인'};
-            
-            const answer = types[Math.floor(Math.random() * types.length)];
-            
-            monsterEl.innerText = emojis[answer];
-            monsterEl.style.animation = "pulse 0.5s";
-
-            // 2. AI 생각 중...
-            statusEl.innerText = "데이터 스캔 중...";
-            guessEl.innerText = "???";
-            confEl.innerText = "";
-
-            setTimeout(() => {
-                // 3. 결과 판정
-                if (!isTrained) {
-                    // 훈련 안 했을 때: 엉터리 추측
-                    statusEl.innerText = "모르겠어요...";
-                    guessEl.innerText = "응?";
-                    confEl.innerText = "확신: 0% (훈련이 필요해요!)";
-                } else {
-                    // 훈련 했을 때: 데이터 비율에 따라 정확도 결정
-                    // 특정 몬스터 데이터가 적으면 틀릴 수도 있음!
-                    let myDataCount = collectedData[answer];
-                    let chance = (myDataCount / totalData) * 100 + (100 - currentLoss); 
-                    
-                    // 최대 99%
-                    chance = Math.min(chance, 99);
-                    
-                    if (Math.random() * 100 < chance) {
-                        // 정답
-                        statusEl.innerText = "알았습니다! 이것은...";
-                        guessEl.innerText = names[answer] + "!";
-                        guessEl.style.color = "#00b894";
-                    } else {
-                        // 오답 (데이터 부족 시 발생)
-                        const wrongAnswer = types[Math.floor(Math.random() * types.length)];
-                        statusEl.innerText = "어... 헷갈리는데...";
-                        guessEl.innerText = names[wrongAnswer] + "?";
-                        guessEl.style.color = "#d63031";
-                    }
-                    confEl.innerText = `확신: ${Math.floor(chance)}% (데이터: ${myDataCount}개)`;
-                }
-            }, 1000); // 1초 뒤 결과
-        }
-
-        // --- 유틸리티 ---
-        function showModal(msg) {
-            document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('alert-modal').classList.remove('hidden');
-        }
-        function closeModal() {
-            document.getElementById('alert-modal').classList.add('hidden');
-        }
-
-    </script>
+</script>
 </body>
 </html>
