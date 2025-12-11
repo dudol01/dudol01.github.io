@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Smart Seat - iOS Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="../css/global.css" rel="stylesheet">
+    <style>
+        /* --- iOS Design System --- */
+        :root {
+            --ios-bg: transparent;
+            /* Use global background */
+            --ios-card: rgba(255, 255, 255, 0.8);
+            --ios-blue: #007AFF;
+            --ios-green: #34C759;
+            --ios-red: #FF3B30;
+            --ios-text: #1C1C1E;
+            --ios-gray: #8E8E93;
+            --ios-border: rgba(0, 0, 0, 0.1);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --desk-radius: 12px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            /* background-color: var(--ios-bg); Handled by global.css */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            color: var(--ios-text);
+            overflow: hidden;
+        }
+
+        /* --- 사이드바 (설정) --- */
+        #sidebar {
+            width: 360px;
+            /* 입력 필드가 많아져서 조금 넓힘 */
+            background: rgba(242, 242, 247, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+            padding: 20px 0;
+        }
+
+        .ios-header {
+            padding: 0 20px 10px 20px;
+        }
+
+        .ios-header h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        /* 설정 그룹 박스 */
+        .list-group {
+            background: var(--ios-card);
+            border-radius: 12px;
+            margin: 0 16px 15px 16px;
+            padding: 10px 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--ios-border);
+            font-size: 14px;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* 커스텀 슬라이더 (Range Input) */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 120px;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin-top: -8px;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: var(--ios-blue);
+            border-radius: 2px;
+        }
+
+        /* 학생 리스트 컨테이너 */
+        #student-list-container {
+            flex: 1;
+            overflow-y: auto;
+            margin: 0 16px 10px 16px;
+            padding-right: 4px;
+            /* 스크롤바 공간 */
+        }
+
+        /* 학생 입력 행 (복잡해짐) */
+        .student-row {
+            background: var(--ios-card);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .student-number {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--ios-gray);
+            width: 20px;
+        }
+
+        .input-name {
+            width: 70px;
+            border: none;
+            background: rgba(242, 242, 247, 0.8);
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .input-avoid {
+            flex: 1;
+            border: none;
+            background: rgba(255, 240, 240, 0.8);
+            /* 연한 빨강 배경 */
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--ios-red);
+        }
+
+        .input-avoid::placeholder {
+            color: #ffb3b3;
+        }
+
+        /* 토글 버튼들 */
+        .toggle-btn {
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+        }
+
+        /* 성별 토글 */
+        .gender-m {
+            background: #e3f2fd;
+            color: #007AFF;
+        }
+
+        .gender-f {
+            background: #fce4ec;
+            color: #ff2d55;
+        }
+
+        /* 성적 토글 */
+        .level-high {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .level-mid {
+            background: #f5f5f5;
+            color: #616161;
+        }
+
+        .level-low {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        /* 하단 버튼 */
+        .bottom-action {
+            padding: 16px;
+            background: transparent;
+            /* backdrop-filter: blur(20px); handled by sidebar bg */
+        }
+
+        .ios-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #007AFF, #0051a8);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            items-center;
+            gap: 8px;
+        }
+
+        .ios-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- 오른쪽 교실 --- */
+        #classroom {
+            flex: 1;
+            position: relative;
+            background-color: transparent;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #blackboard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 40px;
+            background: rgba(58, 58, 60, 0.8);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .desk {
+            width: 110px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--desk-radius);
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            cursor: grab;
+            z-index: 10;
+            border: 2px solid transparent;
+            transition: transform 0.2s, left 0.4s, top 0.4s;
+        }
+
+        .desk span.name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .desk span.info {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        /* 모둠별 색상 (테두리 + 배경틴트) */
+        .g-1 {
+            border-color: #ff3b30;
+            background: rgba(255, 245, 245, 0.9);
+        }
+
+        .g-2 {
+            border-color: #ff9500;
+            background: rgba(255, 251, 240, 0.9);
+        }
+
+        .g-3 {
+            border-color: #ffcc00;
+            background: rgba(255, 255, 240, 0.9);
+        }
+
+        .g-4 {
+            border-color: #34c759;
+            background: rgba(240, 255, 244, 0.9);
+        }
+
+        .g-5 {
+            border-color: #007aff;
+            background: rgba(240, 248, 255, 0.9);
+        }
+
+        .g-6 {
+            border-color: #5856d6;
+            background: rgba(245, 245, 255, 0.9);
+        }
+
+        /* 로딩 오버레이 */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-weight: bold;
+            color: var(--ios-blue);
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body class="pt-20">
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div id="sidebar">
+        <div class="ios-header">
+            <h1>AI 자리 배치 <span style="font-size:14px; color:#888; font-weight:normal;">Pro</span></h1>
+        </div>
+
+        <div class="list-group">
+            <div class="list-item">
+                <span class="list-label">학생 수</span>
+                <select id="student-count" onchange="initClass()"
+                    style="border:none; outline:none; font-weight:bold; color:#007AFF;">
+                </select>
+            </div>
+            <div class="list-item">
+                <span class="list-label">모둠 수</span>
+                <select id="group-count" style="border:none; outline:none; font-weight:bold; color:#007AFF;">
+                    <option value="2">2모둠</option>
+                    <option value="3">3모둠</option>
+                    <option value="4">4모둠</option>
+                    <option value="5">5모둠</option>
+                    <option value="6" selected>6모둠</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="ios-header" style="padding-bottom:5px;">
+            <span style="font-size:12px; color:var(--ios-gray); font-weight:600;">AI 가중치 (중요도) 설정</span>
+        </div>
+        <div class="list-group">
+            <div class="list-item">
+                <span class="list-label" style="font-size:13px;">👫 성별 균형</span>
+                <input type="range" id="w-gender" min="0" max="100" value="50">
+            </div>
+            <div class="list-item">
+                <span class="list-label" style="font-size:13px;">📊 성적 균형</span>
+                <input type="range" id="w-level" min="0" max="100" value="30">
+            </div>
+            <div class="list-item">
+                <span class="list-label" style="font-size:13px; color:var(--ios-red);">💔 기피 회피</span>
+                <input type="range" id="w-avoid" min="0" max="100" value="90">
+            </div>
+        </div>
+
+        <div class="ios-header" style="padding-bottom:5px;">
+            <span style="font-size:12px; color:var(--ios-gray); font-weight:600;">STUDENT LIST (번호순)</span>
+        </div>
+        <div id="student-list-container">
+        </div>
+
+        <div class="bottom-action">
+            <button class="ios-btn" onclick="runAI()">
+                <span>⚡ AI 최적 배치 실행</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="classroom">
+        <div id="blackboard">칠 판</div>
+        <div id="loading">AI가 최적의 자리를 계산 중입니다... 🧠</div>
+    </div>
+
+    <script src="../js/nav.js"></script>
+    <script>
+        // 전역 변수
+        let GRID_GAP_X = 130;
+        let GRID_GAP_Y = 90;
+        let GRID_START_Y = 100;
+
+        // 랜덤 데이터
+        const names = ['민준', '서준', '도윤', '예준', '시우', '하준', '지호', '지우', '서현', '서연', '지유', '지아'];
+        function getRandomName() { return names[Math.floor(Math.random() * names.length)]; }
+
+        window.onload = function () {
+            const sel = document.getElementById('student-count');
+            for (let i = 1; i <= 40; i++) {
+                let opt = document.createElement('option');
+                opt.value = i; opt.text = i + "명";
+                if (i === 12) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            initClass();
+        };
+
+        function initClass() {
+            const count = parseInt(document.getElementById('student-count').value);
+            const container = document.getElementById('student-list-container');
+
+            // 기존 데이터 백업 로직 생략(단순화를 위해) - 필요시 추가 가능
+            container.innerHTML = '';
+            document.querySelectorAll('.desk').forEach(d => d.remove());
+
+            for (let i = 1; i <= count; i++) {
+                const row = document.createElement('div');
+                row.className = 'student-row';
+
+                // HTML 구조: 번호 | 이름 | 기피친구 | 성별Btn | 성적Btn
+                row.innerHTML = `
+                    <span class="student-number">${i}</span>
+                    <input type="text" class="input-name" placeholder="이름" value="${getRandomName()}">
+                    <input type="text" class="input-avoid" placeholder="기피대상 이름">
+                    <div class="toggle-btn gender-m" onclick="toggleGender(this)" data-val="m">남</div>
+                    <div class="toggle-btn level-mid" onclick="toggleLevel(this)" data-val="2">중</div>
+                `;
+                container.appendChild(row);
+            }
+            // 빈 책상 미리 배치
+            renderDesks([]);
+        }
+
+        // 토글 함수들
+        function toggleGender(btn) {
+            if (btn.dataset.val === 'm') {
+                btn.dataset.val = 'f'; btn.className = 'toggle-btn gender-f'; btn.innerText = '여';
+            } else {
+                btn.dataset.val = 'm'; btn.className = 'toggle-btn gender-m'; btn.innerText = '남';
+            }
+        }
+        function toggleLevel(btn) {
+            const v = parseInt(btn.dataset.val);
+            if (v === 3) { btn.dataset.val = 1; btn.className = 'toggle-btn level-low'; btn.innerText = '하'; }
+            else if (v === 1) { btn.dataset.val = 2; btn.className = 'toggle-btn level-mid'; btn.innerText = '중'; }
+            else { btn.dataset.val = 3; btn.className = 'toggle-btn level-high'; btn.innerText = '상'; }
+        }
+
+        // --- 핵심: AI 알고리즘 실행 ---
+        function runAI() {
+            document.getElementById('loading').style.display = 'flex';
+
+            // UI 렌더링을 위해 setTimeout 사용
+            setTimeout(() => {
+                const result = calculateBestLayout();
+                renderDesks(result);
+                document.getElementById('loading').style.display = 'none';
+            }, 100);
+        }
+
+        function calculateBestLayout() {
+            // 1. 데이터 수집
+            const rows = document.querySelectorAll('.student-row');
+            let students = [];
+            rows.forEach((row, idx) => {
+                const name = row.querySelector('.input-name').value.trim() || `학생${idx + 1}`;
+                const avoid = row.querySelector('.input-avoid').value.trim();
+                const gender = row.querySelector('.toggle-btn[data-val]').dataset.val; // 'm' or 'f'
+                const level = parseInt(row.querySelectorAll('.toggle-btn')[1].dataset.val); // 1, 2, 3
+
+                students.push({ id: idx, name, avoid, gender, level });
+            });
+
+            const groupCount = parseInt(document.getElementById('group-count').value);
+            const wGender = parseInt(document.getElementById('w-gender').value);
+            const wLevel = parseInt(document.getElementById('w-level').value);
+            const wAvoid = parseInt(document.getElementById('w-avoid').value) * 10; // 기피는 가중치 뻥튀기
+
+            let bestScore = -Infinity;
+            let bestGrouping = []; // [ [stu1, stu2], [stu3, stu4] ... ]
+
+            // 2. 몬테카를로 시뮬레이션 (1000번 반복)
+            for (let iter = 0; iter < 1000; iter++) {
+                // 셔플
+                let shuffled = [...students].sort(() => Math.random() - 0.5);
+
+                // 그룹 나누기
+                let groups = Array.from({ length: groupCount }, () => []);
+                shuffled.forEach((stu, i) => {
+                    groups[i % groupCount].push(stu);
+                });
+
+                // 점수 계산 (Penalty 방식: 점수가 높을수록 좋음, 패널티는 마이너스)
+                let currentScore = 0;
+
+                groups.forEach(g => {
+                    // (1) 성별 균형: 남녀 차이가 적을수록 좋음
+                    let males = g.filter(s => s.gender === 'm').length;
+                    let females = g.length - males;
+                    currentScore -= Math.abs(males - females) * wGender;
+
+                    // (2) 성적 균형: 그룹 내 평균이 전체 평균(2.0)에 가까울수록 좋음 (분산 최소화)
+                    let sumLevel = g.reduce((a, b) => a + b.level, 0);
+                    let avgLevel = g.length ? sumLevel / g.length : 0;
+                    currentScore -= Math.abs(avgLevel - 2.0) * wLevel * 5;
+
+                    // (3) 기피 관계 확인 (가장 중요)
+                    g.forEach(s => {
+                        if (s.avoid) {
+                            // 기피 대상이 같은 그룹에 있는지 확인
+                            if (g.some(mate => mate.name === s.avoid)) {
+                                currentScore -= wAvoid * 100; // 엄청난 감점
+                            }
+                        }
+                    });
+                });
+
+                // 최신 기록 갱신
+                if (currentScore > bestScore) {
+                    bestScore = currentScore;
+                    bestGrouping = JSON.parse(JSON.stringify(groups));
+                }
+            }
+
+            // 그룹화된 데이터를 일렬 배열로 풀어서 리턴 (자리 배치용)
+            // Group 1 멤버들 -> Group 2 멤버들 ... 순서
+            let flatResult = [];
+            bestGrouping.forEach((g, gIdx) => {
+                g.forEach(s => {
+                    s.groupNum = gIdx + 1; // 몇 모둠인지 태깅
+                    flatResult.push(s);
+                });
+            });
+            return flatResult;
+        }
+
+        function renderDesks(studentData) {
+            const classroom = document.getElementById('classroom');
+            const currentDesks = document.querySelectorAll('.desk');
+            currentDesks.forEach(d => d.remove());
+
+            const count = parseInt(document.getElementById('student-count').value);
+            // 학생 데이터가 없으면 빈 자리 생성
+            const data = studentData.length ? studentData : Array.from({ length: count }, (_, i) => ({ name: `자리${i + 1}`, groupNum: 0 }));
+
+            // 배치 계산 (모둠형 배치 시각화)
+            // 4열 배치 예시
+            const cols = 4;
+            const classroomWidth = classroom.clientWidth;
+            const totalWidth = (cols - 1) * GRID_GAP_X + 110;
+            let startX = (classroomWidth - totalWidth) / 2;
+            if (startX < 20) startX = 20;
+
+            data.forEach((stu, i) => {
+                const desk = document.createElement('div');
+                desk.className = `desk g-${stu.groupNum > 6 ? 6 : stu.groupNum}`; // 색상 클래스
+
+                const colIndex = i % cols;
+                const rowIndex = Math.floor(i / cols);
+
+                // 모둠끼리 약간 띄우기 (옵션) - 여기선 단순 격자로 함
+                const x = startX + (colIndex * GRID_GAP_X);
+                const y = GRID_START_Y + (rowIndex * GRID_GAP_Y);
+
+                desk.style.left = x + 'px';
+                desk.style.top = y + 'px';
+
+                desk.innerHTML = `
+                    <span class="name">${stu.name}</span>
+                    ${stu.groupNum ? `<span class="info">${stu.groupNum}모둠</span>` : ''}
+                `;
+
+                classroom.appendChild(desk);
+                makeDraggable(desk);
+            });
+        }
+
+        // 드래그 기능 (Snap)
+        function makeDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown;
+            function dragMouseDown(e) {
+                e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY;
+                elmnt.style.transition = 'none'; // 드래그 즉시 반응
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+                pos3 = e.clientX; pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+            function closeDragElement() {
+                document.onmouseup = null; document.onmousemove = null;
+                elmnt.style.transition = 'top 0.4s, left 0.4s'; // 다시 부드럽게
+                // Snap Logic 생략하거나 간단히 구현 가능
+            }
+        }
+    </script>
+</body>
+
+</html>
